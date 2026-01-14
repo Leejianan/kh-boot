@@ -1,0 +1,30 @@
+target/
+!.mvn/wrapper/maven-wrapper.jar
+node_modules/
+package-lock.json
+logs/
+*.log
+.DS_Store
+
+### IntelliJ IDEA ###
+.idea/
+*.iws
+*.iml
+*.ipr
+out/
+
+### VS Code ###
+.vscode/
+.factorypath
+
+### Maven ###
+mvntest.log
+release.properties
+pom.xml.releaseBackup
+pom.xml.tagBackup
+pom.xml.next
+release.properties
+
+### OS ###
+.DS_Store
+Thumbs.db

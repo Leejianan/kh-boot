@@ -1,0 +1,132 @@
+-- Create database
+CREATE DATABASE IF NOT EXISTS boom_db CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
+USE boom_db;
+
+-- 1. Permission Table
+CREATE TABLE `kh_permission` (
+  `id` varchar(64) NOT NULL COMMENT 'Primary Key ID',
+  `name` varchar(50) NOT NULL COMMENT 'Permission Name',
+  `parent_id` varchar(64) DEFAULT '0' COMMENT 'Parent ID',
+  `permission_key` varchar(100) DEFAULT NULL COMMENT 'Permission Key (e.g. system:user:add)',
+  `type` tinyint(2) NOT NULL DEFAULT '0' COMMENT 'Resource Type (0:Directory, 1:Menu, 2:Button)',
+  `path` varchar(255) DEFAULT NULL COMMENT 'Router Path',
+  `component` varchar(255) DEFAULT NULL COMMENT 'Component Path',
+  `icon` varchar(100) DEFAULT NULL COMMENT 'Icon',
+  `sort` int(11) DEFAULT '0' COMMENT 'Sort Order',
+  `status` tinyint(1) DEFAULT '1' COMMENT 'Status (1:Normal, 0:Disabled)',
+  `create_time` datetime DEFAULT CURRENT_TIMESTAMP COMMENT 'Create Time',
+  `update_time` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT 'Update Time',
+  `create_by` varchar(64) DEFAULT NULL COMMENT 'Creator ID',
+  `create_by_name` varchar(64) DEFAULT NULL COMMENT 'Creator Name',
+  `update_by` varchar(64) DEFAULT NULL COMMENT 'Updater ID',
+  `update_by_name` varchar(64) DEFAULT NULL COMMENT 'Updater Name',
+  `version` int(11) DEFAULT '1' COMMENT 'Optimistic Lock Version',
+  `del_flag` tinyint(1) DEFAULT '0' COMMENT 'Logic Delete (0: Normal, 1: Deleted)',
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='Permission Table';
+
+-- 2. Role Table
+CREATE TABLE `kh_role` (
+  `id` varchar(64) NOT NULL COMMENT 'Primary Key ID',
+  `name` varchar(50) NOT NULL COMMENT 'Role Name',
+  `role_key` varchar(50) NOT NULL COMMENT 'Role Key (e.g. admin)',
+  `sort` int(11) DEFAULT '0' COMMENT 'Sort Order',
+  `status` tinyint(1) DEFAULT '1' COMMENT 'Status (1:Normal, 0:Disabled)',
+  `create_time` datetime DEFAULT CURRENT_TIMESTAMP COMMENT 'Create Time',
+  `update_time` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT 'Update Time',
+  `create_by` varchar(64) DEFAULT NULL COMMENT 'Creator ID',
+  `create_by_name` varchar(64) DEFAULT NULL COMMENT 'Creator Name',
+  `update_by` varchar(64) DEFAULT NULL COMMENT 'Updater ID',
+  `update_by_name` varchar(64) DEFAULT NULL COMMENT 'Updater Name',
+  `version` int(11) DEFAULT '1' COMMENT 'Optimistic Lock Version',
+  `del_flag` tinyint(1) DEFAULT '0' COMMENT 'Logic Delete (0: Normal, 1: Deleted)',
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='Role Table';
+
+-- 3. User Table
+CREATE TABLE `kh_user` (
+  `id` varchar(64) NOT NULL COMMENT 'User ID',
+  `username` varchar(50) NOT NULL COMMENT 'Username',
+  `password` varchar(100) NOT NULL COMMENT 'Password',
+  `user_code` varchar(50) DEFAULT NULL COMMENT 'Business User Code',
+  `phone` varchar(20) DEFAULT NULL COMMENT 'Phone Number',
+  `email` varchar(50) DEFAULT NULL COMMENT 'Email',
+  `status` tinyint(1) DEFAULT '1' COMMENT 'Status: 1-Normal, 0-Disabled',
+  `audit_status` tinyint(1) DEFAULT '1' COMMENT 'Audit Status: 0-Pending, 1-Approved, 2-Rejected',
+  `create_time` datetime DEFAULT CURRENT_TIMESTAMP COMMENT 'Create Time',
+  `update_time` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT 'Update Time',
+  `audit_time` datetime DEFAULT NULL COMMENT 'Audit Time',
+  `auditor` varchar(50) DEFAULT NULL COMMENT 'Auditor User',
+  `create_by` varchar(64) DEFAULT NULL COMMENT 'Creator ID',
+  `create_by_name` varchar(64) DEFAULT NULL COMMENT 'Creator Name',
+  `update_by` varchar(64) DEFAULT NULL COMMENT 'Updater ID',
+  `update_by_name` varchar(64) DEFAULT NULL COMMENT 'Updater Name',
+  `version` int(11) DEFAULT '1' COMMENT 'Optimistic Lock Version',
+  `del_flag` tinyint(1) DEFAULT '0' COMMENT 'Logic Delete (0: Normal, 1: Deleted)',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `idx_username` (`username`),
+  UNIQUE KEY `idx_user_code` (`user_code`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='User Table';
+
+-- 4. User-Role Association
+CREATE TABLE `kh_user_role` (
+  `id` varchar(64) NOT NULL,
+  `user_id` varchar(64) NOT NULL COMMENT 'User ID',
+  `role_id` varchar(64) NOT NULL COMMENT 'Role ID',
+  PRIMARY KEY (`id`),
+  KEY `idx_user_id` (`user_id`),
+  KEY `idx_role_id` (`role_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='User Role Association';
+
+-- 5. Role-Permission Association
+CREATE TABLE `kh_role_permission` (
+  `id` varchar(64) NOT NULL,
+  `role_id` varchar(64) NOT NULL COMMENT 'Role ID',
+  `permission_id` varchar(64) NOT NULL COMMENT 'Permission ID',
+  PRIMARY KEY (`id`),
+  KEY `idx_role_id` (`role_id`),
+  KEY `idx_permission_id` (`permission_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='Role Permission Association';
+
+-- 6. Serial Number Table
+CREATE TABLE `kh_serial_number` (
+  `id` varchar(64) NOT NULL COMMENT 'Primary Key ID',
+  `business_key` varchar(50) NOT NULL COMMENT 'Business Key (e.g. USER_CODE)',
+  `prefix` varchar(20) DEFAULT NULL COMMENT 'Historical Prefix (Optional)',
+  `date_part` varchar(20) DEFAULT NULL COMMENT 'Current Date Part (e.g. 20240114)',
+  `current_value` bigint(20) NOT NULL DEFAULT '0' COMMENT 'Current Max Value',
+  `rule_prefix` varchar(20) DEFAULT NULL COMMENT 'Configured Prefix',
+  `rule_date_format` varchar(20) DEFAULT NULL COMMENT 'Configured Date Format',
+  `rule_width` int(11) DEFAULT NULL COMMENT 'Configured Sequence Width',
+  `update_time` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT 'Update Time',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `idx_business_key` (`business_key`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='Serial Number Generator Table with Dynamic Rules';
+
+-- Initial Data (Snowflake IDs for demo, in reality these would be generated)
+-- Admin User: password is '123456' (BCrypt hashed)
+INSERT INTO `kh_user` (`id`, `username`, `password`, `status`) VALUES ('1', 'admin', '$2a$10$8.UnVuG9HHgffUDAlk8qfOuVGkqRzgVymGe07xd00DMxs.pS.xCuS', 1);
+
+-- Admin Role
+INSERT INTO `kh_role` (`id`, `name`, `role_key`, `sort`) VALUES ('1', 'Administrator', 'admin', 1);
+
+-- User-Role Link
+INSERT INTO `kh_user_role` (`id`, `user_id`, `role_id`) VALUES ('1', '1', '1');
+
+-- Permissions demo
+INSERT INTO `kh_permission` (`id`, `name`, `parent_id`, `permission_key`, `type`, `sort`) VALUES 
+('1', 'System Management', '0', 'system', 0, 1),
+('2', 'User Management', '1', 'system:user', 1, 1),
+('3', 'User List', '2', 'system:user:list', 2, 1),
+('4', 'Role Management', '1', 'system:role', 1, 2),
+('5', 'Role List', '4', 'system:role:list', 2, 1),
+('6', 'Permission Management', '1', 'system:permission', 1, 3),
+('7', 'Permission List', '6', 'system:permission:list', 2, 1),
+('8', 'Online User', '1', 'system:online', 1, 4),
+('9', 'Online List', '8', 'system:online:list', 2, 1),
+('10', 'Online Kick', '8', 'system:online:kick', 2, 2);
+
+-- Role-Permission Link (Admin has all)
+INSERT INTO `kh_role_permission` (`id`, `role_id`, `permission_id`) VALUES 
+('1', '1', '1'), ('2', '1', '2'), ('3', '1', '3'), ('4', '1', '4'), ('5', '1', '5'), ('6', '1', '6'), ('7', '1', '7'), ('8', '1', '8'), ('9', '1', '9'), ('10', '1', '10');
+
