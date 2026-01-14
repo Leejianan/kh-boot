@@ -7,6 +7,8 @@ import io.swagger.v3.oas.models.info.Info;
 import io.swagger.v3.oas.models.info.License;
 import io.swagger.v3.oas.models.security.SecurityRequirement;
 import io.swagger.v3.oas.models.security.SecurityScheme;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springdoc.core.customizers.GlobalOpenApiCustomizer;
@@ -17,12 +19,22 @@ import java.util.Map;
 @Configuration
 public class OpenApiConfig {
 
+        @Value("${kh.openapi.title:KH-Boot API Documentation}")
+        private String title;
+
+        @Value("${kh.openapi.description:Backend APIs powered by KH-Boot}")
+        private String description;
+
+        @Value("${kh.openapi.version:v1.0.0}")
+        private String version;
+
         @Bean
-        public OpenAPI boomOpenAPI() {
+        @ConditionalOnMissingBean
+        public OpenAPI khOpenAPI() {
                 return new OpenAPI()
-                                .info(new Info().title("Boom API Documentation")
-                                                .description("Backend APIs for the Boom Project - Built with Spring Boot 3 & JDK 17")
-                                                .version("v1.0.0")
+                                .info(new Info().title(title)
+                                                .description(description)
+                                                .version(version)
                                                 .license(new License().name("Apache 2.0").url("http://springdoc.org")))
                                 .externalDocs(new ExternalDocumentation()
                                                 .description("Project Wiki")

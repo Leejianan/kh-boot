@@ -109,6 +109,9 @@ private String userCode; // 自动生成如: U-20240114-0001
 | `kh.security.rsa.public-key` | (内置默认) | **前端加密公钥**。需提供给前端 JS 库使用。 |
 | `kh.security.rsa.private-key` | (内置默认) | **后端解密私钥**。生产环境务必重新生成并覆盖。 |
 | `kh.boot.serial-number.scan-packages` | `com.kh.boot.entity` | **流水号扫描包路径**。支持 Ant 风格（如 `**.entity`）。只有该路径下的 `@BusinessCode` 才会生效。 |
+| `kh.openapi.title` | `KH-Boot API Documentation` | **API 文档标题**。支持引入者自定义覆盖。 |
+| `kh.openapi.description` | `Default API...` | **API 文档描述**。支持引入者自定义覆盖。 |
+| `kh.openapi.version` | `v1.0.0` | **API 文档版本**。 |
 | `spring.data.redis.host` | (无) | **Redis 坐标**。配置此项后，系统自动由 Caffeine 升级为 Redis 缓存。 |
 | `kh.cache.timeout` | `120` | **会话有效期** (单位：分钟)。 |
 | `mybatis-plus.mapper-locations` | `classpath:mapper/*.xml` | Mapper XML 扫描路径。 |

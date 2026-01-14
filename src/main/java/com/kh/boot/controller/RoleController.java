@@ -4,7 +4,6 @@ import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.kh.boot.common.Result;
 import com.kh.boot.dto.KhRoleDTO;
-import com.kh.boot.entity.KhRole;
 import com.kh.boot.service.RoleService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
