@@ -5,8 +5,8 @@
 <mapper namespace="com.kh.boot.mapper.UserMapper">
 
     <!-- Query User List -->
-    <select id="selectUserList" resultType="com.kh.boot.entity.User">
-        SELECT * FROM bm_user
+    <select id="selectUserList" resultType="com.kh.boot.entity.KhUser">
+        SELECT * FROM kh_user
     </select>
 
 </mapper>
