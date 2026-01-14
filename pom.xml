@@ -10,7 +10,7 @@
     </parent>
     <groupId>com.kh</groupId>
     <artifactId>kh-boot</artifactId>
-    <version>1.0.0-SNAPSHOT</version>
+    <version>1.0.1-SNAPSHOT</version>
     <name>kh-boot</name>
     <description>KH-Boot: A high-performance Spring Boot RBAC Scaffold</description>
     <url/>
