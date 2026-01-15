@@ -158,6 +158,7 @@ public class SecurityConfig {
         DaoAuthenticationProvider provider = new DaoAuthenticationProvider();
         provider.setUserDetailsService(userDetailsService);
         provider.setPasswordEncoder(passwordEncoder());
+        provider.setHideUserNotFoundExceptions(false); // Make it easier to debug
         return provider;
     }
 
@@ -219,6 +220,7 @@ public class SecurityConfig {
         filter.setAuthenticationManager(authenticationManager(authenticationConfiguration));
         filter.setAuthenticationSuccessHandler(authenticationSuccessHandler());
         filter.setAuthenticationFailureHandler(authenticationFailureHandler());
+        filter.setPrivateKey(privateKey);
         return filter;
     }
 
