@@ -24,7 +24,7 @@ import org.springframework.web.bind.annotation.RestController;
  */
 @Tag(name = "Email Log", description = "Email sending record management")
 @RestController
-@RequestMapping("/email/records")
+@RequestMapping("/admin/system/email")
 @RequiredArgsConstructor
 public class EmailRecordController extends BaseController {
 

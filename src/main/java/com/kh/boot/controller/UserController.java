@@ -16,7 +16,7 @@ import java.util.List;
 
 @Tag(name = "User Management", description = "APIs for managing users")
 @RestController
-@RequestMapping("/users")
+@RequestMapping("/admin/system/user")
 public class UserController extends BaseController {
 
     @Autowired

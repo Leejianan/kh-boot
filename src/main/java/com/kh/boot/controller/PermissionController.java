@@ -17,28 +17,25 @@ import java.util.List;
 
 @Tag(name = "Permission Management")
 @RestController
-@RequestMapping("/permissions")
+@RequestMapping("/admin/system/permission")
 public class PermissionController extends BaseController {
 
     @Autowired
     private PermissionService permissionService;
-
-    @Autowired
-    private PermissionConverter permissionConverter;
 
     @Operation(summary = "Get Permission Tree")
     @GetMapping("/tree")
     @PreAuthorize("hasAuthority('system:permission:list')")
     public Result<List<KhPermissionDTO>> tree() {
         List<KhPermission> tree = permissionService.getPermissionTree();
-        return success(permissionConverter.toDtoList(tree));
+        return success(PermissionConverter.INSTANCE.toDtoList(tree));
     }
 
     @Operation(summary = "Add Permission")
     @PostMapping
     @PreAuthorize("hasAuthority('system:permission:add')")
     public Result<Boolean> add(@RequestBody KhPermissionDTO dto) {
-        KhPermission permission = permissionConverter.toEntity(dto);
+        KhPermission permission = PermissionConverter.INSTANCE.toEntity(dto);
         return success(permissionService.save(permission));
     }
 
@@ -46,7 +43,7 @@ public class PermissionController extends BaseController {
     @PutMapping
     @PreAuthorize("hasAuthority('system:permission:edit')")
     public Result<Boolean> update(@RequestBody KhPermissionDTO dto) {
-        KhPermission permission = permissionConverter.toEntity(dto);
+        KhPermission permission = PermissionConverter.INSTANCE.toEntity(dto);
         return success(permissionService.updateById(permission));
     }
 

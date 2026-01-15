@@ -16,7 +16,7 @@ import java.util.List;
 
 @Tag(name = "Role Management")
 @RestController
-@RequestMapping("/roles")
+@RequestMapping("/admin/system/role")
 public class RoleController extends BaseController {
 
     @Autowired

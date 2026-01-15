@@ -10,7 +10,6 @@ import com.kh.boot.entity.KhEmailRecord;
 import com.kh.boot.mapper.EmailRecordMapper;
 import com.kh.boot.query.EmailRecordQuery;
 import com.kh.boot.service.EmailRecordService;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
@@ -26,11 +25,8 @@ import org.springframework.util.StringUtils;
  */
 @Slf4j
 @Service
-@RequiredArgsConstructor
 public class EmailRecordServiceImpl extends ServiceImpl<EmailRecordMapper, KhEmailRecord>
         implements EmailRecordService {
-
-    private final EmailRecordConverter emailRecordConverter;
 
     @Override
     public IPage<KhEmailRecordDTO> page(EmailRecordQuery query) {
@@ -40,7 +36,7 @@ public class EmailRecordServiceImpl extends ServiceImpl<EmailRecordMapper, KhEma
         wrapper.eq(query.getSendResult() != null, KhEmailRecord::getSendResult, query.getSendResult());
         wrapper.orderByDesc(KhEmailRecord::getCreateTime);
         IPage<KhEmailRecord> pageResult = this.page(pageParam, wrapper);
-        return pageResult.convert(emailRecordConverter::toDto);
+        return pageResult.convert(EmailRecordConverter.INSTANCE::toDto);
     }
 
     @Async

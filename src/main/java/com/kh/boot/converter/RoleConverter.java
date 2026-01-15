@@ -4,10 +4,13 @@ import com.kh.boot.dto.KhRoleDTO;
 import com.kh.boot.entity.KhRole;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
+import org.mapstruct.factory.Mappers;
 import java.util.List;
 
-@Mapper(componentModel = "spring")
+@Mapper
 public interface RoleConverter {
+
+    RoleConverter INSTANCE = Mappers.getMapper(RoleConverter.class);
 
     @Mapping(target = "permissionIds", ignore = true)
     KhRoleDTO toDto(KhRole role);

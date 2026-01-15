@@ -10,7 +10,7 @@
     </parent>
     <groupId>com.kh</groupId>
     <artifactId>kh-boot</artifactId>
-    <version>1.0.2-SNAPSHOT</version>
+    <version>1.0.3-SNAPSHOT</version>
     <name>kh-boot</name>
     <description>KH-Boot: A high-performance Spring Boot RBAC Scaffold</description>
     <url/>
@@ -204,7 +204,6 @@
                         </path>
                     </annotationProcessorPaths>
                     <compilerArgs>
-                        <arg>-Amapstruct.defaultComponentModel=spring</arg>
                     </compilerArgs>
 
                 </configuration>

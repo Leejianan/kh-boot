@@ -124,8 +124,7 @@ INSERT IGNORE INTO `kh_permission` (`id`, `name`, `parent_id`, `permission_key`,
 ('6', 'Permission Management', '1', 'system:permission', 1, 3),
 ('7', 'Permission List', '6', 'system:permission:list', 2, 1),
 ('8', 'Online User', '1', 'system:online', 1, 4),
-('9', 'Online List', '8', 'system:online:list', 2, 1),
-('1', '1', '1'), ('2', '1', '2'), ('3', '1', '3'), ('4', '1', '4'), ('5', '1', '5'), ('6', '1', '6'), ('7', '1', '7'), ('8', '1', '8'), ('9', '1', '9'), ('10', '1', '10');
+('9', 'Online List', '8', 'system:online:list', 2, 1);
 
 -- 7. Email Record Table
 CREATE TABLE IF NOT EXISTS `kh_email_record` (

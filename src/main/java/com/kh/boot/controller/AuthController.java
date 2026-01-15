@@ -2,8 +2,7 @@ package com.kh.boot.controller;
 
 import com.kh.boot.common.Result;
 import com.kh.boot.converter.UserConverter;
-import com.kh.boot.dto.KhUserInfoDTO;
-import com.kh.boot.dto.KhUserRegisterDTO;
+import com.kh.boot.dto.*;
 import com.kh.boot.entity.KhUser;
 import com.kh.boot.security.domain.LoginUser;
 import com.kh.boot.service.EmailService;
@@ -32,9 +31,6 @@ public class AuthController {
     private UserService userService;
 
     @Autowired
-    private UserConverter userConverter;
-
-    @Autowired
     private PasswordEncoder passwordEncoder;
 
     @Autowired
@@ -46,10 +42,31 @@ public class AuthController {
     @Value("${kh.security.rsa.private-key}")
     private String privateKey;
 
+    @Operation(summary = "User Login", description = "Login with username and password (JSON)")
+    @PostMapping("/login")
+    public Result<String> login(@RequestBody KhLoginRequest loginRequest) {
+        // Handled by Security Filter
+        return Result.success("Login Success", null);
+    }
+
+    @Operation(summary = "SMS Login", description = "Login with phone and code (Form Data)")
+    @PostMapping("/login/sms")
+    public Result<String> smsLogin(@RequestParam String phone, @RequestParam String code) {
+        // Handled by Security Filter
+        return Result.success("Login Success", null);
+    }
+
+    @Operation(summary = "Email Login", description = "Login with email and code (Form Data)")
+    @PostMapping("/login/email")
+    public Result<String> emailLogin(@RequestParam String email, @RequestParam String code) {
+        // Handled by Security Filter
+        return Result.success("Login Success", null);
+    }
+
     @Operation(summary = "User Register", description = "Register a new user")
     @PostMapping("/register")
     public Result<Void> register(@RequestBody @Validated KhUserRegisterDTO registerDTO) {
-        KhUser user = userConverter.toEntity(registerDTO);
+        KhUser user = UserConverter.INSTANCE.toEntity(registerDTO);
 
         user.setPassword(passwordEncoder.encode(user.getPassword()));
         user.setStatus(1); // Normal

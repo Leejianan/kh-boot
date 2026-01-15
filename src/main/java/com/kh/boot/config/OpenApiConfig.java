@@ -12,6 +12,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springdoc.core.customizers.GlobalOpenApiCustomizer;
+import org.springdoc.core.models.GroupedOpenApi;
 
 import java.util.Arrays;
 import java.util.Map;
@@ -39,7 +40,6 @@ public class OpenApiConfig {
                                 .externalDocs(new ExternalDocumentation()
                                                 .description("Project Wiki")
                                                 .url("https://github.com/example/boom"))
-                                // 使用 "token" 作为 SecurityScheme 的标识符，但 header 名称依然是 "Authorization"
                                 .addSecurityItem(new SecurityRequirement().addList("bearerToken"))
                                 .components(new Components()
                                                 .addSecuritySchemes("bearerToken",
@@ -50,7 +50,23 @@ public class OpenApiConfig {
                                                                                 .description("Enter your token here. Note: Backend now supports tokens with OR without 'Bearer ' prefix.")));
         }
 
-        private static final String[] PUBLIC_ENDPOINTS = { "/login", "/register", "/error" };
+        @Bean
+        public GroupedOpenApi systemApi() {
+                return GroupedOpenApi.builder()
+                                .group("1-System Management (kh-boot)")
+                                .packagesToScan("com.kh.boot.controller")
+                                .build();
+        }
+
+        private static final String[] PUBLIC_ENDPOINTS = {
+                        "/login",
+                        "/register",
+                        "/error",
+                        "/sms/code",
+                        "/email/code",
+                        "/login/sms",
+                        "/login/email"
+        };
 
         @Bean
         public GlobalOpenApiCustomizer orderGlobalOpenApiCustomizer() {

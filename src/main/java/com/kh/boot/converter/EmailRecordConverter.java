@@ -4,6 +4,7 @@ import com.kh.boot.dto.KhEmailRecordDTO;
 import com.kh.boot.entity.KhEmailRecord;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
+import org.mapstruct.factory.Mappers;
 
 import java.util.List;
 
@@ -15,8 +16,10 @@ import java.util.List;
  * @author harlan
  * @since 2024-01-15
  */
-@Mapper(componentModel = "spring")
+@Mapper
 public interface EmailRecordConverter {
+
+    EmailRecordConverter INSTANCE = Mappers.getMapper(EmailRecordConverter.class);
 
     @Mapping(source = "sendSubject", target = "subject")
     @Mapping(source = "sendContent", target = "content")

@@ -27,9 +27,6 @@ public class RoleServiceImpl extends ServiceImpl<RoleMapper, KhRole> implements 
     @Autowired
     private RolePermissionMapper rolePermissionMapper;
 
-    @Autowired
-    private RoleConverter roleConverter;
-
     @Override
     public IPage<KhRoleDTO> getRolePage(RoleQuery query) {
         Page<KhRole> pageParam = query.toPage();
@@ -42,19 +39,19 @@ public class RoleServiceImpl extends ServiceImpl<RoleMapper, KhRole> implements 
         }
 
         IPage<KhRole> rolePage = baseMapper.selectPage(pageParam, wrapper);
-        return rolePage.convert(roleConverter::toDto);
+        return rolePage.convert(RoleConverter.INSTANCE::toDto);
     }
 
     @Override
     public void addRole(KhRoleDTO roleDTO) {
-        KhRole role = roleConverter.toEntity(roleDTO);
+        KhRole role = RoleConverter.INSTANCE.toEntity(roleDTO);
         EntityUtils.initInsert(role);
         baseMapper.insert(role);
     }
 
     @Override
     public void updateRole(KhRoleDTO roleDTO) {
-        KhRole role = roleConverter.toEntity(roleDTO);
+        KhRole role = RoleConverter.INSTANCE.toEntity(roleDTO);
         EntityUtils.initUpdate(role);
         baseMapper.updateById(role);
     }

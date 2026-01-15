@@ -1,15 +1,20 @@
 package com.kh.boot.converter;
 
+import com.kh.boot.dto.KhPermissionDTO;
+import com.kh.boot.entity.KhPermission;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
+import org.mapstruct.factory.Mappers;
 import java.util.List;
 
-@Mapper(componentModel = "spring")
+@Mapper
 public interface PermissionConverter {
+
+    PermissionConverter INSTANCE = Mappers.getMapper(PermissionConverter.class);
 
     @Mapping(target = "label", source = "name")
     @Mapping(target = "perms", source = "permissionKey")
-    com.kh.boot.dto.KhPermissionDTO toDto(com.kh.boot.entity.KhPermission permission);
+    KhPermissionDTO toDto(KhPermission permission);
 
     @Mapping(target = "name", source = "label")
     @Mapping(target = "permissionKey", source = "perms")
@@ -22,7 +27,7 @@ public interface PermissionConverter {
     @Mapping(target = "updateByName", ignore = true)
     @Mapping(target = "version", ignore = true)
     @Mapping(target = "delFlag", ignore = true)
-    com.kh.boot.entity.KhPermission toEntity(com.kh.boot.dto.KhPermissionDTO dto);
+    KhPermission toEntity(KhPermissionDTO dto);
 
-    List<com.kh.boot.dto.KhPermissionDTO> toDtoList(List<com.kh.boot.entity.KhPermission> permissions);
+    List<KhPermissionDTO> toDtoList(List<KhPermission> permissions);
 }

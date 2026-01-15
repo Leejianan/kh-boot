@@ -35,9 +35,6 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, KhUser> implements 
     @Autowired
     private UserRoleMapper userRoleMapper;
 
-    @Autowired
-    private UserConverter userConverter;
-
     @Override
     public KhUser findByUsername(String username) {
         return getOne(new LambdaQueryWrapper<KhUser>()
@@ -87,7 +84,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, KhUser> implements 
     @Override
     public List<KhUserDTO> getUserListDTO() {
         List<KhUser> users = baseMapper.selectUserList();
-        return userConverter.toDtoList(users);
+        return UserConverter.INSTANCE.toDtoList(users);
     }
 
     @Override
@@ -155,7 +152,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, KhUser> implements 
         }
 
         com.baomidou.mybatisplus.core.metadata.IPage<KhUser> result = baseMapper.selectPage(pageParam, wrapper);
-        return result.convert(userConverter::toDto);
+        return result.convert(UserConverter.INSTANCE::toDto);
     }
 
     @Override

@@ -109,7 +109,7 @@ public class SecurityConfig {
                         .permitAll()
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/swagger-ui.html", "/doc.html",
-                                "/webjars/**", "/error", "/") // 允许 /error 和根路径
+                                "/webjars/**", "/error", "/")
                         .permitAll()
                         .anyRequest().authenticated())
                 .exceptionHandling(exceptions -> exceptions
@@ -196,7 +196,7 @@ public class SecurityConfig {
 
     @Bean
     public SmsAuthenticationFilter smsAuthenticationFilter() throws Exception {
-        SmsAuthenticationFilter filter = new SmsAuthenticationFilter();
+        SmsAuthenticationFilter filter = new SmsAuthenticationFilter("/admin/auth/login/sms");
         filter.setAuthenticationManager(authenticationManager(authenticationConfiguration));
         filter.setAuthenticationSuccessHandler(authenticationSuccessHandler());
         filter.setAuthenticationFailureHandler(authenticationFailureHandler());
@@ -205,7 +205,7 @@ public class SecurityConfig {
 
     @Bean
     public EmailAuthenticationFilter emailAuthenticationFilter() throws Exception {
-        EmailAuthenticationFilter filter = new EmailAuthenticationFilter();
+        EmailAuthenticationFilter filter = new EmailAuthenticationFilter("/admin/auth/login/email");
         filter.setAuthenticationManager(authenticationManager(authenticationConfiguration));
         filter.setAuthenticationSuccessHandler(authenticationSuccessHandler());
         filter.setAuthenticationFailureHandler(authenticationFailureHandler());
@@ -214,7 +214,8 @@ public class SecurityConfig {
 
     @Bean
     public JsonUsernamePasswordAuthenticationFilter jsonUsernamePasswordAuthenticationFilter() throws Exception {
-        JsonUsernamePasswordAuthenticationFilter filter = new JsonUsernamePasswordAuthenticationFilter();
+        JsonUsernamePasswordAuthenticationFilter filter = new JsonUsernamePasswordAuthenticationFilter(
+                "/admin/auth/login");
         filter.setAuthenticationManager(authenticationManager(authenticationConfiguration));
         filter.setAuthenticationSuccessHandler(authenticationSuccessHandler());
         filter.setAuthenticationFailureHandler(authenticationFailureHandler());
