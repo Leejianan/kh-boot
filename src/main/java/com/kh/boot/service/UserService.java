@@ -48,4 +48,19 @@ public interface UserService extends IService<KhUser>, SmsUserDetailsService, Em
      * Get role IDs by user ID
      */
     List<String> getRoleIdsByUserId(String userId);
+
+    /**
+     * Create a new user
+     */
+    void createUser(com.kh.boot.dto.KhUserCreateDTO createDTO);
+
+    /**
+     * Update user
+     */
+    void updateUser(com.kh.boot.dto.KhUserUpdateDTO updateDTO);
+
+    /**
+     * Delete user
+     */
+    void deleteUser(String id);
 }

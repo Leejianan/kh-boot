@@ -16,8 +16,10 @@ import com.kh.boot.service.UserService;
 import com.kh.boot.vo.KhMetaVo;
 import com.kh.boot.vo.KhRouterVo;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import com.kh.boot.util.EntityUtils;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -34,6 +36,9 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, KhUser> implements 
 
     @Autowired
     private UserRoleMapper userRoleMapper;
+
+    @Autowired
+    private PasswordEncoder passwordEncoder;
 
     @Override
     public KhUser findByUsername(String username) {
@@ -162,5 +167,56 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, KhUser> implements 
         return userRoles.stream()
                 .map(KhUserRole::getRoleId)
                 .collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void createUser(com.kh.boot.dto.KhUserCreateDTO createDTO) {
+        KhUser user = UserConverter.INSTANCE.toEntity(createDTO);
+
+        user.setPassword(passwordEncoder.encode(createDTO.getPassword()));
+        // Set default status if null (handled by DTO default but good to be safe)
+        if (user.getStatus() == null) {
+            user.setStatus(1);
+        }
+        user.setAuditStatus(1); // Auto approve for admin created users
+
+        EntityUtils.initInsert(user);
+
+        save(user);
+
+        if (createDTO.getRoleIds() != null && !createDTO.getRoleIds().isEmpty()) {
+            assignRoles(user.getId(), createDTO.getRoleIds());
+        }
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void updateUser(com.kh.boot.dto.KhUserUpdateDTO updateDTO) {
+        KhUser user = UserConverter.INSTANCE.toEntity(updateDTO);
+
+        // Handle password update only if provided
+        if (updateDTO.getPassword() != null && !updateDTO.getPassword().isEmpty()) {
+            user.setPassword(passwordEncoder.encode(updateDTO.getPassword()));
+        } else {
+            user.setPassword(null); // Ensure null password doesn't overwrite existing
+        }
+
+        EntityUtils.initUpdate(user);
+        updateById(user);
+
+        // Update roles if provided (empty list means remove all roles, null means
+        // ignore)
+        if (updateDTO.getRoleIds() != null) {
+            assignRoles(user.getId(), updateDTO.getRoleIds());
+        }
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void deleteUser(String id) {
+        removeById(id);
+        // Remove associated roles
+        userRoleMapper.delete(new QueryWrapper<KhUserRole>().eq("user_id", id));
     }
 }

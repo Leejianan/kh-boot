@@ -43,4 +43,30 @@ public class UserController extends BaseController {
     public Result<List<String>> getRoles(@PathVariable String id) {
         return success(userService.getRoleIdsByUserId(id));
     }
+
+    @Operation(summary = "Create User")
+    @PostMapping
+    @PreAuthorize("hasAuthority('system:user:add')")
+    public Result<Void> create(
+            @RequestBody @org.springframework.validation.annotation.Validated com.kh.boot.dto.KhUserCreateDTO createDTO) {
+        userService.createUser(createDTO);
+        return success(null);
+    }
+
+    @Operation(summary = "Update User")
+    @PutMapping
+    @PreAuthorize("hasAuthority('system:user:edit')")
+    public Result<Void> update(
+            @RequestBody @org.springframework.validation.annotation.Validated com.kh.boot.dto.KhUserUpdateDTO updateDTO) {
+        userService.updateUser(updateDTO);
+        return success(null);
+    }
+
+    @Operation(summary = "Delete User")
+    @DeleteMapping("/{id}")
+    @PreAuthorize("hasAuthority('system:user:delete')")
+    public Result<Void> delete(@PathVariable String id) {
+        userService.deleteUser(id);
+        return success(null);
+    }
 }
