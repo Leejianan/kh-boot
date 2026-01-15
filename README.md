@@ -10,6 +10,7 @@
 - **🔢 业务流水号引擎**：高精度、可配置的业务编码生成器（如 `U-20240114-0001`）。支持按日、按月自动重置，支持 Redis 原子计数与数据库持久化双重保障。
 - **🔌 零侵入 Starter 模式**：完全遵循 Spring Boot 3 自动配置规范。新项目只需引入依赖，即可全自动装配缓存、安全、持久化等所有核心组件。
 - **⚙️ 智能化预扫描机制**：系统启动时自动扫描标记有 `@BusinessCode` 的实体，自动注册流水号生成规则，无需手动配置。
+- **📧 邮件审计追踪**：全自动记录邮件发送日志（收件人、标题、内容、结果、失败原因），支持失败回溯与可视化查询。
 - **🔑 增强型会话安全**：
   - **多模态认证**：同时支持 **JSON 账号密码登录** 与 **SMS 短信验证码登录**。
   - **安全传输**：密码支持 RSA 非对称加密传输，存储采用 BCrypt 强哈希。
@@ -85,6 +86,7 @@ com.kh.boot
 | **账号登录** | POST | `/admin/auth/login` | JSON: `{"username": "...", "password": "..."}` |
 | **发送验证码** | POST | `/admin/auth/sms/code` | Param: `phone` |
 | **短信登录** | POST | `/admin/auth/login/sms` | Param: `phone`, `code` |
+| **邮件记录** | GET | `/email/record/list` | Param: `page`, `size` |
 
 > **SMS 集成说明**：
 > 系统内置了 `MockSmsService`，会在控制台打印生成的验证码（方便测试）。
@@ -112,6 +114,7 @@ private String userCode; // 自动生成如: U-20240114-0001
 | `kh.boot.index.enabled` | `true` | **默认首页开关**。设为 `false` 可关闭默认的 `/` 欢迎页，避免与业务项目首页冲突。 |
 | `kh.security.cors.enabled` | `true` | **跨域开关**。开发环境设为 `true`，生成环境如使用 Nginx 反代可设为 `false` 关闭。 |
 | `kh.security.cors.allowed-origins` | `*` | **允许跨域的源**。默认为所有，生产环境建议指定具体域名，如 `https://admin.example.com`。 |
+| `spring.sql.init.mode` | `always` | **SQL 初始化开关**。设为 `never` 可关闭启动时自动执行 SQL 脚本的功能。 |
 
 ---
 

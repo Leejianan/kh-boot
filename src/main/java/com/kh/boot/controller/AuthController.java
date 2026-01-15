@@ -6,6 +6,8 @@ import com.kh.boot.dto.KhUserInfoDTO;
 import com.kh.boot.dto.KhUserRegisterDTO;
 import com.kh.boot.entity.KhUser;
 import com.kh.boot.security.domain.LoginUser;
+import com.kh.boot.service.EmailService;
+import com.kh.boot.service.SmsService;
 import com.kh.boot.service.UserService;
 import com.kh.boot.util.EntityUtils;
 import com.kh.boot.util.SecurityUtils;
@@ -36,10 +38,10 @@ public class AuthController {
     private PasswordEncoder passwordEncoder;
 
     @Autowired
-    private com.kh.boot.service.SmsService smsService;
+    private SmsService smsService;
 
     @Autowired
-    private com.kh.boot.service.EmailService emailService;
+    private EmailService emailService;
 
     @Value("${kh.security.rsa.private-key}")
     private String privateKey;
@@ -59,9 +61,9 @@ public class AuthController {
         boolean success = userService.save(user);
 
         if (success) {
-            return Result.success("Register success", null);
+            return Result.success("注册成功", null);
         } else {
-            return Result.error(500, "Register failed");
+            return Result.error(500, "注册失败");
         }
     }
 
@@ -70,16 +72,16 @@ public class AuthController {
     public Result<String> sendSmsCode(@RequestParam String phone) {
         // Simple validation
         if (phone == null || phone.length() < 11) {
-            return Result.error("Invalid phone number");
+            return Result.error("手机号无效");
         }
 
         boolean success = smsService.sendCode(phone);
         if (success) {
             // In a real env, don't return code. For mock, we might want to hint it's in
             // logs.
-            return Result.success("Code sent (check logs for mock)");
+            return Result.success("验证码已发送 (请查看日志)", null);
         } else {
-            return Result.error("Failed to send code");
+            return Result.error("验证码发送失败");
         }
     }
 
@@ -87,14 +89,14 @@ public class AuthController {
     @PostMapping("/email/code")
     public Result<String> sendEmailCode(@RequestParam String email) {
         if (email == null || !email.contains("@")) {
-            return Result.error("Invalid email address");
+            return Result.error("邮箱地址无效");
         }
 
         String code = emailService.sendCode(email);
         if (code != null) {
-            return Result.success("Code sent to " + email);
+            return Result.success("验证码已发送至 " + email);
         } else {
-            return Result.error("Failed to send code");
+            return Result.error("验证码发送失败");
         }
     }
 
@@ -104,7 +106,7 @@ public class AuthController {
         LoginUser loginUser = SecurityUtils.getLoginUser();
 
         if (loginUser == null) {
-            return Result.error(401, "Unauthorized");
+            return Result.error(401, "未授权");
         }
 
         KhUserInfoDTO userInfoDTO = new KhUserInfoDTO();
@@ -128,7 +130,7 @@ public class AuthController {
         String userId = SecurityUtils.getUserId();
 
         if (userId == null) {
-            return Result.error("User not found");
+            return Result.error("未找到用户信息");
         }
 
         return Result.success(userService.getMenusByUserId(userId));

@@ -1,12 +1,12 @@
 package com.kh.boot.security.filter;
 
 import com.kh.boot.cache.AuthCache;
-import com.kh.boot.security.domain.LoginUser;
 import com.kh.boot.util.JwtUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.lang.NonNull;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
@@ -50,12 +50,12 @@ public class JwtAuthenticationTokenFilter extends OncePerRequestFilter {
             String cachedToken = authCache.getToken(username, userType);
 
             if (token != null && token.equals(cachedToken)) {
-                // Get pre-loaded LoginUser from cache (contains IP, Browser, etc.)
-                LoginUser loginUser = authCache.getUser(username, userType);
+                // Get pre-loaded user details from cache
+                UserDetails userDetails = authCache.getUser(username, userType);
 
-                if (loginUser != null && !jwtUtil.isTokenExpired(token)) {
+                if (userDetails != null && !jwtUtil.isTokenExpired(token)) {
                     UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
-                            loginUser, null, loginUser.getAuthorities());
+                            userDetails, null, userDetails.getAuthorities());
                     authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                     SecurityContextHolder.getContext().setAuthentication(authentication);
                 }

@@ -28,6 +28,10 @@ public class Result<T> {
         return result(200, msg, data);
     }
 
+    public static <T> Result<PageData<T>> pageSuccess(com.baomidou.mybatisplus.core.metadata.IPage<T> page) {
+        return success(PageData.build(page));
+    }
+
     public static <T> Result<T> error(String msg) {
         return result(500, msg, null);
     }

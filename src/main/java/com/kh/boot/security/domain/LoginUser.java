@@ -46,27 +46,27 @@ public class LoginUser implements UserDetails {
     private String userCode;
 
     /**
-     * Email
+     * 邮箱
      */
     private String email;
 
     /**
-     * Phone
+     * 电话
      */
     private String phone;
 
     /**
-     * Status
+     * 状态
      */
     private Integer status;
 
     /**
-     * Login Time
+     * 登录时间
      */
     private Date loginTime;
 
     /**
-     * Expiration Time
+     * 过期时间
      */
     private Long expireTime;
 

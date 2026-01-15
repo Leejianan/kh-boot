@@ -1,6 +1,8 @@
 package com.kh.boot.controller;
 
+import com.kh.boot.common.PageData;
 import com.kh.boot.common.Result;
+import com.kh.boot.controller.base.BaseController;
 import com.kh.boot.converter.PermissionConverter;
 import com.kh.boot.dto.KhPermissionDTO;
 import com.kh.boot.entity.KhPermission;
@@ -16,7 +18,7 @@ import java.util.List;
 @Tag(name = "Permission Management")
 @RestController
 @RequestMapping("/permissions")
-public class PermissionController {
+public class PermissionController extends BaseController {
 
     @Autowired
     private PermissionService permissionService;
@@ -29,7 +31,7 @@ public class PermissionController {
     @PreAuthorize("hasAuthority('system:permission:list')")
     public Result<List<KhPermissionDTO>> tree() {
         List<KhPermission> tree = permissionService.getPermissionTree();
-        return Result.success(permissionConverter.toDtoList(tree));
+        return success(permissionConverter.toDtoList(tree));
     }
 
     @Operation(summary = "Add Permission")
@@ -37,7 +39,7 @@ public class PermissionController {
     @PreAuthorize("hasAuthority('system:permission:add')")
     public Result<Boolean> add(@RequestBody KhPermissionDTO dto) {
         KhPermission permission = permissionConverter.toEntity(dto);
-        return Result.success(permissionService.save(permission));
+        return success(permissionService.save(permission));
     }
 
     @Operation(summary = "Update Permission")
@@ -45,13 +47,13 @@ public class PermissionController {
     @PreAuthorize("hasAuthority('system:permission:edit')")
     public Result<Boolean> update(@RequestBody KhPermissionDTO dto) {
         KhPermission permission = permissionConverter.toEntity(dto);
-        return Result.success(permissionService.updateById(permission));
+        return success(permissionService.updateById(permission));
     }
 
     @Operation(summary = "Delete Permission")
     @DeleteMapping("/{id}")
     @PreAuthorize("hasAuthority('system:permission:delete')")
     public Result<Boolean> delete(@PathVariable String id) {
-        return Result.success(permissionService.removeById(id));
+        return success(permissionService.removeById(id));
     }
 }

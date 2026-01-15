@@ -109,7 +109,7 @@ public class SecurityConfig {
                         .permitAll()
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/swagger-ui.html", "/doc.html",
-                                "/webjars/**", "/error", "/") // Permit /error and root path
+                                "/webjars/**", "/error", "/") // 允许 /error 和根路径
                         .permitAll()
                         .anyRequest().authenticated())
                 .exceptionHandling(exceptions -> exceptions
@@ -121,28 +121,15 @@ public class SecurityConfig {
         http.authenticationProvider(daoAuthenticationProvider());
 
         // SMS Filter
-        SmsAuthenticationFilter smsFilter = new SmsAuthenticationFilter(
-                "/admin/auth/login/sms");
-        smsFilter.setAuthenticationManager(authenticationConfiguration.getAuthenticationManager());
-        smsFilter.setAuthenticationSuccessHandler(authenticationSuccessHandler());
-        smsFilter.setAuthenticationFailureHandler(authenticationFailureHandler());
+        SmsAuthenticationFilter smsFilter = smsAuthenticationFilter();
         http.addFilterBefore(smsFilter, UsernamePasswordAuthenticationFilter.class);
 
         // Email Filter
-        EmailAuthenticationFilter emailFilter = new EmailAuthenticationFilter(
-                "/admin/auth/login/email");
-        emailFilter.setAuthenticationManager(authenticationConfiguration.getAuthenticationManager());
-        emailFilter.setAuthenticationSuccessHandler(authenticationSuccessHandler());
-        emailFilter.setAuthenticationFailureHandler(authenticationFailureHandler());
+        EmailAuthenticationFilter emailFilter = emailAuthenticationFilter();
         http.addFilterBefore(emailFilter, UsernamePasswordAuthenticationFilter.class);
 
         // JSON Username/Password Filter
-        JsonUsernamePasswordAuthenticationFilter jsonFilter = new JsonUsernamePasswordAuthenticationFilter(
-                "/admin/auth/login");
-        jsonFilter.setAuthenticationManager(authenticationConfiguration.getAuthenticationManager());
-        jsonFilter.setAuthenticationSuccessHandler(authenticationSuccessHandler());
-        jsonFilter.setAuthenticationFailureHandler(authenticationFailureHandler());
-        jsonFilter.setPrivateKey(privateKey);
+        JsonUsernamePasswordAuthenticationFilter jsonFilter = jsonUsernamePasswordAuthenticationFilter();
         http.addFilterBefore(jsonFilter, UsernamePasswordAuthenticationFilter.class);
 
         http.addFilterBefore(jwtAuthenticationTokenFilter, UsernamePasswordAuthenticationFilter.class);
@@ -205,6 +192,33 @@ public class SecurityConfig {
             response.setContentType("application/json;charset=UTF-8");
             response.getWriter().write("{\"code\":401,\"msg\":\"" + exception.getMessage() + "\",\"data\":null}");
         };
+    }
+
+    @Bean
+    public SmsAuthenticationFilter smsAuthenticationFilter() throws Exception {
+        SmsAuthenticationFilter filter = new SmsAuthenticationFilter();
+        filter.setAuthenticationManager(authenticationManager(authenticationConfiguration));
+        filter.setAuthenticationSuccessHandler(authenticationSuccessHandler());
+        filter.setAuthenticationFailureHandler(authenticationFailureHandler());
+        return filter;
+    }
+
+    @Bean
+    public EmailAuthenticationFilter emailAuthenticationFilter() throws Exception {
+        EmailAuthenticationFilter filter = new EmailAuthenticationFilter();
+        filter.setAuthenticationManager(authenticationManager(authenticationConfiguration));
+        filter.setAuthenticationSuccessHandler(authenticationSuccessHandler());
+        filter.setAuthenticationFailureHandler(authenticationFailureHandler());
+        return filter;
+    }
+
+    @Bean
+    public JsonUsernamePasswordAuthenticationFilter jsonUsernamePasswordAuthenticationFilter() throws Exception {
+        JsonUsernamePasswordAuthenticationFilter filter = new JsonUsernamePasswordAuthenticationFilter();
+        filter.setAuthenticationManager(authenticationManager(authenticationConfiguration));
+        filter.setAuthenticationSuccessHandler(authenticationSuccessHandler());
+        filter.setAuthenticationFailureHandler(authenticationFailureHandler());
+        return filter;
     }
 
     @Bean

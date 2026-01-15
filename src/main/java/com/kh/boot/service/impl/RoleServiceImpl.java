@@ -1,6 +1,6 @@
 package com.kh.boot.service.impl;
 
-import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
@@ -10,11 +10,13 @@ import com.kh.boot.entity.KhRole;
 import com.kh.boot.entity.KhRolePermission;
 import com.kh.boot.mapper.RoleMapper;
 import com.kh.boot.mapper.RolePermissionMapper;
+import com.kh.boot.query.RoleQuery;
 import com.kh.boot.service.RoleService;
 import com.kh.boot.util.EntityUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -29,13 +31,17 @@ public class RoleServiceImpl extends ServiceImpl<RoleMapper, KhRole> implements 
     private RoleConverter roleConverter;
 
     @Override
-    public IPage<KhRoleDTO> getRolePage(Page<KhRole> page, String name) {
-        QueryWrapper<KhRole> wrapper = new QueryWrapper<>();
-        if (name != null && !name.isEmpty()) {
-            wrapper.like("name", name);
+    public IPage<KhRoleDTO> getRolePage(RoleQuery query) {
+        Page<KhRole> pageParam = query.toPage();
+        LambdaQueryWrapper<KhRole> wrapper = new LambdaQueryWrapper<>();
+        wrapper.like(StringUtils.hasText(query.getName()), KhRole::getName, query.getName());
+
+        // If no custom sorting, set default sort
+        if (!StringUtils.hasText(query.getOrderBy())) {
+            wrapper.orderByAsc(KhRole::getSort);
         }
-        wrapper.orderByAsc("sort");
-        IPage<KhRole> rolePage = baseMapper.selectPage(page, wrapper);
+
+        IPage<KhRole> rolePage = baseMapper.selectPage(pageParam, wrapper);
         return rolePage.convert(roleConverter::toDto);
     }
 
@@ -56,16 +62,16 @@ public class RoleServiceImpl extends ServiceImpl<RoleMapper, KhRole> implements 
     @Override
     public void deleteRole(String id) {
         baseMapper.deleteById(id);
-        QueryWrapper<KhRolePermission> queryWrapper = new QueryWrapper<>();
-        queryWrapper.eq("role_id", id);
+        LambdaQueryWrapper<KhRolePermission> queryWrapper = new LambdaQueryWrapper<>();
+        queryWrapper.eq(KhRolePermission::getRoleId, id);
         rolePermissionMapper.delete(queryWrapper);
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void assignPermissions(String roleId, List<String> permissionIds) {
-        QueryWrapper<KhRolePermission> queryWrapper = new QueryWrapper<>();
-        queryWrapper.eq("role_id", roleId);
+        LambdaQueryWrapper<KhRolePermission> queryWrapper = new LambdaQueryWrapper<>();
+        queryWrapper.eq(KhRolePermission::getRoleId, roleId);
         rolePermissionMapper.delete(queryWrapper);
 
         if (permissionIds != null && !permissionIds.isEmpty()) {
@@ -80,8 +86,8 @@ public class RoleServiceImpl extends ServiceImpl<RoleMapper, KhRole> implements 
 
     @Override
     public List<String> getRolePermissionIds(String roleId) {
-        QueryWrapper<KhRolePermission> queryWrapper = new QueryWrapper<>();
-        queryWrapper.eq("role_id", roleId);
+        LambdaQueryWrapper<KhRolePermission> queryWrapper = new LambdaQueryWrapper<>();
+        queryWrapper.eq(KhRolePermission::getRoleId, roleId);
         List<KhRolePermission> list = rolePermissionMapper.selectList(queryWrapper);
         return list.stream().map(KhRolePermission::getPermissionId).collect(Collectors.toList());
     }

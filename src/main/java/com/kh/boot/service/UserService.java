@@ -1,8 +1,10 @@
 package com.kh.boot.service;
 
+import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.kh.boot.dto.KhUserDTO;
 import com.kh.boot.entity.KhUser;
+import com.kh.boot.query.UserQuery;
 import com.kh.boot.vo.KhRouterVo;
 import com.kh.boot.security.sms.SmsUserDetailsService;
 import com.kh.boot.security.email.EmailUserDetailsService;
@@ -36,6 +38,11 @@ public interface UserService extends IService<KhUser>, SmsUserDetailsService, Em
      * Assign roles to user
      */
     void assignRoles(String userId, List<String> roleIds);
+
+    /**
+     * Get user list with pagination
+     */
+    IPage<KhUserDTO> page(UserQuery query);
 
     /**
      * Get role IDs by user ID

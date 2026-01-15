@@ -23,27 +23,27 @@ public class MockEmailService implements EmailService {
     @Autowired(required = false)
     private EmailUtils emailUtils;
 
-    // Simulate storage (Use Redis in production)
+    // 模拟存储 (生产环境应当使用 Redis)
     private final Map<String, String> codeStore = new ConcurrentHashMap<>();
 
     @Override
     public String sendCode(String email) {
-        // Generate a 4-digit code
+        // 生成 4 位验证码
         String code = String.valueOf((int) ((Math.random() * 9 + 1) * 1000));
         codeStore.put(email, code);
 
-        log.info("=========== MOCK EMAIL SENDER ===========");
-        log.info("To: {}", email);
-        log.info("Content: Your verification code is {}", code);
+        log.info("=========== MOCK 邮件发送器 ===========");
+        log.info("收件人: {}", email);
+        log.info("内容: 您的验证码是 {}", code);
         log.info("========================================");
 
-        // If EmailUtils is available (Starter Mail is present), try sending real email
+        // 如果配置了 EmailUtils (Starter Mail 存在)，尝试发送真实邮件
         if (emailUtils != null) {
             try {
-                emailUtils.sendSimpleEmail(email, "Login Verification Code", "Your code is: " + code);
-                log.info("Real email sent via EmailUtils");
+                emailUtils.sendSimpleEmail(email, "登录验证码", "您的验证码是: " + code);
+                log.info("通过 EmailUtils 发送真实邮件成功");
             } catch (Exception e) {
-                log.warn("Failed to send real email: {}", e.getMessage());
+                log.warn("发送真实邮件失败: {}", e.getMessage());
             }
         }
 

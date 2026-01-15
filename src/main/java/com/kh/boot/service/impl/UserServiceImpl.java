@@ -54,12 +54,12 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, KhUser> implements 
     public UserDetails loadUserByPhone(String phone) throws UsernameNotFoundException {
         KhUser user = findByPhone(phone);
         if (user == null) {
-            throw new UsernameNotFoundException("User not found with phone: " + phone);
+            throw new UsernameNotFoundException("手机号未注册: " + phone);
         }
 
         List<String> permissions = this.getPermissionsByUserId(user.getId());
         LoginUser loginUser = new LoginUser(user, permissions);
-        loginUser.setUserType("admin");
+        loginUser.setUserType(com.kh.boot.constant.UserType.ADMIN.getValue());
 
         return loginUser;
     }
@@ -69,12 +69,12 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, KhUser> implements 
         KhUser user = getOne(new LambdaQueryWrapper<KhUser>()
                 .eq(KhUser::getEmail, email));
         if (user == null) {
-            throw new UsernameNotFoundException("User not found with email: " + email);
+            throw new UsernameNotFoundException("邮箱未注册: " + email);
         }
 
         List<String> permissions = this.getPermissionsByUserId(user.getId());
         LoginUser loginUser = new LoginUser(user, permissions);
-        loginUser.setUserType("admin");
+        loginUser.setUserType(com.kh.boot.constant.UserType.ADMIN.getValue());
 
         return loginUser;
     }
@@ -134,6 +134,28 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, KhUser> implements 
                 userRoleMapper.insert(userRole);
             }
         }
+    }
+
+    @Override
+    public com.baomidou.mybatisplus.core.metadata.IPage<KhUserDTO> page(com.kh.boot.query.UserQuery query) {
+        com.baomidou.mybatisplus.extension.plugins.pagination.Page<KhUser> pageParam = query.toPage();
+
+        LambdaQueryWrapper<KhUser> wrapper = new LambdaQueryWrapper<>();
+        wrapper.like(org.springframework.util.StringUtils.hasText(query.getUsername()), KhUser::getUsername,
+                query.getUsername());
+        wrapper.like(org.springframework.util.StringUtils.hasText(query.getPhone()), KhUser::getPhone,
+                query.getPhone());
+        wrapper.like(org.springframework.util.StringUtils.hasText(query.getEmail()), KhUser::getEmail,
+                query.getEmail());
+        wrapper.eq(query.getStatus() != null, KhUser::getStatus, query.getStatus());
+
+        // If no custom sorting, set default sort
+        if (!org.springframework.util.StringUtils.hasText(query.getOrderBy())) {
+            wrapper.orderByDesc(KhUser::getCreateTime);
+        }
+
+        com.baomidou.mybatisplus.core.metadata.IPage<KhUser> result = baseMapper.selectPage(pageParam, wrapper);
+        return result.convert(userConverter::toDto);
     }
 
     @Override

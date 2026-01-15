@@ -27,7 +27,7 @@ public class SmsAuthenticationProvider implements AuthenticationProvider {
         if (!smsService.verifyCode(mobile, code)) {
             throw new BadCredentialsException(messages.getMessage(
                     "AbstractUserDetailsAuthenticationProvider.badCredentials",
-                    "Bad credentials"));
+                    "用户名或密码错误"));
         }
 
         // 2. Load User
@@ -37,17 +37,15 @@ public class SmsAuthenticationProvider implements AuthenticationProvider {
                     "UserDetailsService returned null, which is an interface contract violation");
         }
 
-        // 3. Check Account Status (Standard checks handled by
-        // AbstractUserDetailsAuthenticationProvider usually, but we implement simpler
-        // here)
+        // 3. Check Account Status
         if (!user.isAccountNonLocked()) {
-            throw new InternalAuthenticationServiceException("User account is locked");
+            throw new InternalAuthenticationServiceException("账户已被锁定");
         }
         if (!user.isEnabled()) {
-            throw new InternalAuthenticationServiceException("User is disabled");
+            throw new InternalAuthenticationServiceException("账户已禁用");
         }
         if (!user.isAccountNonExpired()) {
-            throw new InternalAuthenticationServiceException("User account has expired");
+            throw new InternalAuthenticationServiceException("账户已过期");
         }
 
         // 4. Create Authenticated Token

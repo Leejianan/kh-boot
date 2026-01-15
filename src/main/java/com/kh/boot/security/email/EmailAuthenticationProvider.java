@@ -27,7 +27,7 @@ public class EmailAuthenticationProvider implements AuthenticationProvider {
         if (!emailService.verifyCode(email, code)) {
             throw new BadCredentialsException(messages.getMessage(
                     "AbstractUserDetailsAuthenticationProvider.badCredentials",
-                    "Bad credentials"));
+                    "用户名或密码错误"));
         }
 
         // 2. Load User
@@ -39,13 +39,13 @@ public class EmailAuthenticationProvider implements AuthenticationProvider {
 
         // 3. Check Account Status
         if (!user.isAccountNonLocked()) {
-            throw new InternalAuthenticationServiceException("User account is locked");
+            throw new InternalAuthenticationServiceException("账户已被锁定");
         }
         if (!user.isEnabled()) {
-            throw new InternalAuthenticationServiceException("User is disabled");
+            throw new InternalAuthenticationServiceException("账户已禁用");
         }
         if (!user.isAccountNonExpired()) {
-            throw new InternalAuthenticationServiceException("User account has expired");
+            throw new InternalAuthenticationServiceException("账户已过期");
         }
 
         // 4. Create Authenticated Token

@@ -1,6 +1,8 @@
 package com.kh.boot.controller;
 
+import com.kh.boot.common.PageData;
 import com.kh.boot.common.Result;
+import com.kh.boot.controller.base.BaseController;
 import com.kh.boot.dto.KhOnlineUserDTO;
 import com.kh.boot.cache.AuthCache;
 import io.swagger.v3.oas.annotations.Operation;
@@ -14,7 +16,7 @@ import java.util.List;
 @Tag(name = "Online User Management", description = "Monitor and manage online users")
 @RestController
 @RequestMapping("/online")
-public class OnlineUserController {
+public class OnlineUserController extends BaseController {
 
     @Autowired
     private AuthCache authCache;
@@ -23,7 +25,7 @@ public class OnlineUserController {
     @GetMapping("/list")
     @PreAuthorize("hasAuthority('system:online:list')")
     public Result<List<KhOnlineUserDTO>> list() {
-        return Result.success(authCache.listOnlineUsers());
+        return success(authCache.listOnlineUsers());
     }
 
     @Operation(summary = "Force Logout User", description = "Invalidate user token and force logout")
@@ -31,6 +33,6 @@ public class OnlineUserController {
     @PreAuthorize("hasAuthority('system:online:logout')")
     public Result<Void> logout(@PathVariable String username, @RequestParam String userType) {
         authCache.remove(username, userType);
-        return Result.success();
+        return success();
     }
 }
