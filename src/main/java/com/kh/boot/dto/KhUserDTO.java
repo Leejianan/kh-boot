@@ -16,6 +16,7 @@ public class KhUserDTO extends KhBaseDTO {
     private String username;
     private String phone;
     private String email;
+    private String avatar;
     private Integer status;
     private Integer auditStatus;
 }

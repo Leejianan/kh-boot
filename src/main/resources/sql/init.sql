@@ -51,6 +51,7 @@ CREATE TABLE `kh_user` (
   `user_code` varchar(50) DEFAULT NULL COMMENT 'Business User Code',
   `phone` varchar(20) DEFAULT NULL COMMENT 'Phone Number',
   `email` varchar(50) DEFAULT NULL COMMENT 'Email',
+  `avatar` varchar(255) DEFAULT NULL COMMENT 'User Avatar URL',
   `status` tinyint(1) DEFAULT '1' COMMENT 'Status: 1-Normal, 0-Disabled',
   `audit_status` tinyint(1) DEFAULT '1' COMMENT 'Audit Status: 0-Pending, 1-Approved, 2-Rejected',
   `create_time` datetime DEFAULT CURRENT_TIMESTAMP COMMENT 'Create Time',
@@ -105,7 +106,7 @@ CREATE TABLE `kh_serial_number` (
 
 -- Initial Data (Snowflake IDs for demo, in reality these would be generated)
 -- Admin User: password is '123456' (BCrypt hashed)
-INSERT INTO `kh_user` (`id`, `username`, `password`, `status`) VALUES ('1', 'admin', '$2a$10$8.UnVuG9HHgffUDAlk8qfOuVGkqRzgVymGe07xd00DMxs.pS.xCuS', 1);
+INSERT INTO `kh_user` (`id`, `username`, `password`, `status`, `avatar`) VALUES ('1', 'admin', '$2a$10$M6iLB/KkSxtNz0ITT6WTaOXc53B5J9VHklmkTIK3dyQmHHVq5396W', 1, 'https://wpimg.wallstcn.com/f778738c-e4f8-4870-b634-56703b4acafe.gif');
 
 -- Admin Role
 INSERT INTO `kh_role` (`id`, `name`, `role_key`, `sort`) VALUES ('1', 'Administrator', 'admin', 1);

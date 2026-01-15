@@ -29,7 +29,7 @@ import java.util.List;
 
 @Tag(name = "Authentication", description = "User authentication APIs")
 @RestController
-@RequestMapping("/auth")
+@RequestMapping("/admin/auth")
 public class AuthController {
 
     @Autowired
@@ -47,66 +47,11 @@ public class AuthController {
     @Autowired
     private PasswordEncoder passwordEncoder;
 
+    @Autowired
+    private com.kh.boot.service.SmsService smsService;
+
     @Value("${kh.security.rsa.private-key}")
     private String privateKey;
-
-    @Operation(summary = "User Login", description = "Login with username and password to get JWT token")
-    @PostMapping("/login")
-    public Result<String> login(@RequestBody KhLoginRequest loginRequest, HttpServletRequest request) {
-        String username = loginRequest.getUsername();
-        String password = loginRequest.getPassword();
-
-        // Decrypt password if it's RSA encrypted
-        try {
-            password = com.kh.boot.util.RsaUtils.decrypt(password, privateKey);
-        } catch (Exception e) {
-            // If decryption fails, we assume it's either plaintext (for dev)
-            // or a real error. For now, we'll let it fall through
-            // but in production you'd likely throw an error.
-        }
-
-        KhUser user = userService.findByUsername(username);
-
-        if (user != null && passwordEncoder.matches(password, user.getPassword())) {
-            String token = jwtUtil.generateToken(username, "admin");
-
-            // Build LoginUser with rich metadata
-            LoginUser loginUser = new LoginUser(user, userService.getPermissionsByUserId(user.getId()));
-            long nowTime = System.currentTimeMillis();
-            loginUser.setLoginTime(new Date(nowTime));
-            loginUser.setExpireTime(nowTime + 1000 * 60 * 60 * 2); // 2 Hours
-            loginUser.setIpaddr(request.getRemoteAddr());
-            loginUser.setLoginLocation("Local Host");
-            loginUser.setUserType("admin");
-
-            // Parse User-Agent
-            String uaStr = request.getHeader("User-Agent");
-            UserAgent ua = UserAgent.parseUserAgentString(uaStr);
-            loginUser.setBrowser(ua.getBrowser().getName());
-            loginUser.setOs(ua.getOperatingSystem().getName());
-
-            // 1. Cache token
-            authCache.putToken(username, "admin", token);
-
-            // 2. Cache LoginUser object
-            authCache.putUser(username, "admin", loginUser);
-
-            // 3. Track online status
-            KhOnlineUserDTO onlineUser = new KhOnlineUserDTO();
-            onlineUser.setUsername(username);
-            onlineUser.setUserType("admin");
-            onlineUser.setIp(loginUser.getIpaddr());
-            onlineUser.setLoginTime(loginUser.getLoginTime());
-            onlineUser.setBrowser(loginUser.getBrowser());
-            onlineUser.setOs(loginUser.getOs());
-            onlineUser.setToken(token.substring(0, Math.min(token.length(), 20)) + "...");
-            authCache.putOnlineUser(onlineUser);
-
-            return Result.success("Login success", token);
-        } else {
-            return Result.error(401, "Invalid username or password");
-        }
-    }
 
     @Operation(summary = "User Register", description = "Register a new user")
     @PostMapping("/register")
@@ -129,6 +74,24 @@ public class AuthController {
         }
     }
 
+    @Operation(summary = "Send SMS Code", description = "Send verification code for SMS login")
+    @PostMapping("/sms/code")
+    public Result<String> sendSmsCode(@RequestParam String phone) {
+        // Simple validation
+        if (phone == null || phone.length() < 11) {
+            return Result.error("Invalid phone number");
+        }
+
+        boolean success = smsService.sendCode(phone);
+        if (success) {
+            // In a real env, don't return code. For mock, we might want to hint it's in
+            // logs.
+            return Result.success("Code sent (check logs for mock)");
+        } else {
+            return Result.error("Failed to send code");
+        }
+    }
+
     @Operation(summary = "Get User Info", description = "Get current logged-in user info and permissions")
     @GetMapping("/user/info")
     public Result<KhUserInfoDTO> info() {
@@ -138,11 +101,14 @@ public class AuthController {
             return Result.error(401, "Unauthorized");
         }
 
-        KhUser user = loginUser.getUser();
         KhUserInfoDTO userInfoDTO = new KhUserInfoDTO();
-        userInfoDTO.setId(user.getId());
-        userInfoDTO.setUsername(user.getUsername());
-        userInfoDTO.setAvatar("https://wpimg.wallstcn.com/f778738c-e4f8-4870-b634-56703b4acafe.gif");
+        userInfoDTO.setId(loginUser.getUserId());
+        userInfoDTO.setUsername(loginUser.getUsername());
+        if (loginUser.getAvatar() == null) {
+            userInfoDTO.setAvatar("https://wpimg.wallstcn.com/f778738c-e4f8-4870-b634-56703b4acafe.gif");
+        } else {
+            userInfoDTO.setAvatar(loginUser.getAvatar());
+        }
 
         userInfoDTO.setRoles(Collections.singletonList("admin"));
         userInfoDTO.setPermissions(loginUser.getPermissions());

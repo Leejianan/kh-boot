@@ -1,4 +1,4 @@
-package com.kh.boot.security;
+package com.kh.boot.security.service;
 
 import com.kh.boot.entity.KhUser;
 import com.kh.boot.service.UserService;
@@ -26,6 +26,8 @@ public class UserDetailsServiceImpl implements UserDetailsService {
         // Load permissions
         List<String> permissions = userService.getPermissionsByUserId(user.getId());
 
-        return new LoginUser(user, permissions);
+        LoginUser loginUser = new LoginUser(user, permissions);
+        loginUser.setUserType("admin");
+        return loginUser;
     }
 }

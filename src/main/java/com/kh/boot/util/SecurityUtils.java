@@ -32,7 +32,7 @@ public class SecurityUtils {
      */
     public static String getUserId() {
         LoginUser loginUser = getLoginUser();
-        return loginUser != null && loginUser.getUser() != null ? loginUser.getUser().getId() : null;
+        return loginUser != null ? loginUser.getUserId() : null;
     }
 
     /**

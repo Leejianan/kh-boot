@@ -11,6 +11,8 @@ public interface UserService extends IService<KhUser> {
 
     KhUser findByUsername(String username);
 
+    KhUser findByPhone(String phone);
+
     List<KhUser> getUserList();
 
     List<KhUserDTO> getUserListDTO();

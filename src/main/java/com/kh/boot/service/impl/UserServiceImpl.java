@@ -1,6 +1,7 @@
 package com.kh.boot.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.kh.boot.converter.UserConverter;
 import com.kh.boot.dto.KhUserDTO;
@@ -11,6 +12,8 @@ import com.kh.boot.mapper.PermissionMapper;
 import com.kh.boot.mapper.UserMapper;
 import com.kh.boot.mapper.UserRoleMapper;
 import com.kh.boot.service.UserService;
+import com.kh.boot.service.PermissionService;
+import com.kh.boot.security.sms.SmsUserDetailsService;
 import com.kh.boot.vo.KhMetaVo;
 import com.kh.boot.vo.KhRouterVo;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,9 +23,12 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import com.kh.boot.security.domain.LoginUser;
 
 @Service
-public class UserServiceImpl extends ServiceImpl<UserMapper, KhUser> implements UserService {
+public class UserServiceImpl extends ServiceImpl<UserMapper, KhUser> implements UserService, SmsUserDetailsService {
 
     @Autowired
     private PermissionMapper permissionMapper;
@@ -35,7 +41,28 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, KhUser> implements 
 
     @Override
     public KhUser findByUsername(String username) {
-        return baseMapper.selectOne(new QueryWrapper<KhUser>().eq("username", username));
+        return getOne(new LambdaQueryWrapper<KhUser>()
+                .eq(KhUser::getUsername, username));
+    }
+
+    @Override
+    public KhUser findByPhone(String phone) {
+        return getOne(new LambdaQueryWrapper<KhUser>()
+                .eq(KhUser::getPhone, phone));
+    }
+
+    @Override
+    public UserDetails loadUserByPhone(String phone) throws UsernameNotFoundException {
+        KhUser user = findByPhone(phone);
+        if (user == null) {
+            throw new UsernameNotFoundException("User not found with phone: " + phone);
+        }
+
+        List<String> permissions = this.getPermissionsByUserId(user.getId());
+        LoginUser loginUser = new LoginUser(user, permissions);
+        loginUser.setUserType("admin");
+
+        return loginUser;
     }
 
     @Override

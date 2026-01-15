@@ -1,5 +1,7 @@
 package com.kh.boot.security.domain;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.kh.boot.entity.KhUser;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -17,14 +19,46 @@ import java.util.stream.Collectors;
  */
 @Data
 @NoArgsConstructor
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class LoginUser implements UserDetails {
 
     private static final long serialVersionUID = 1L;
 
     /**
-     * User Entity
+     * User ID
      */
-    private KhUser user;
+    private String userId;
+
+    /**
+     * Username
+     */
+    private String username;
+
+    /**
+     * Password (Ignored in Serialization)
+     */
+    @JsonIgnore
+    private String password;
+
+    /**
+     * User Code
+     */
+    private String userCode;
+
+    /**
+     * Email
+     */
+    private String email;
+
+    /**
+     * Phone
+     */
+    private String phone;
+
+    /**
+     * Status
+     */
+    private Integer status;
 
     /**
      * Login Time
@@ -57,9 +91,22 @@ public class LoginUser implements UserDetails {
     private String os;
 
     /**
+     * Avatar URL
+     */
+    private String avatar;
+
+    /**
+     * User Type (admin/member)
+     */
+    /**
      * User Type (admin/member)
      */
     private String userType;
+
+    /**
+     * Wechat OpenID
+     */
+    private String openId;
 
     /**
      * Permissions List
@@ -67,11 +114,21 @@ public class LoginUser implements UserDetails {
     private List<String> permissions;
 
     public LoginUser(KhUser user, List<String> permissions) {
-        this.user = user;
+        if (user != null) {
+            this.userId = user.getId();
+            this.username = user.getUsername();
+            this.password = user.getPassword();
+            this.userCode = user.getUserCode();
+            this.email = user.getEmail();
+            this.phone = user.getPhone();
+            this.status = user.getStatus();
+            this.avatar = user.getAvatar();
+        }
         this.permissions = permissions;
     }
 
     @Override
+    @JsonIgnore
     public Collection<? extends GrantedAuthority> getAuthorities() {
         if (permissions == null) {
             return List.of();
@@ -79,16 +136,6 @@ public class LoginUser implements UserDetails {
         return permissions.stream()
                 .map(SimpleGrantedAuthority::new)
                 .collect(Collectors.toList());
-    }
-
-    @Override
-    public String getPassword() {
-        return user != null ? user.getPassword() : null;
-    }
-
-    @Override
-    public String getUsername() {
-        return user != null ? user.getUsername() : null;
     }
 
     @Override
@@ -108,6 +155,6 @@ public class LoginUser implements UserDetails {
 
     @Override
     public boolean isEnabled() {
-        return user != null && user.getStatus() != null && user.getStatus() == 1;
+        return status != null && status == 1;
     }
 }

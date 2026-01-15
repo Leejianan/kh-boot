@@ -20,7 +20,7 @@ public class WebConfig implements WebMvcConfigurer {
     @Override
     public void addInterceptors(@NonNull InterceptorRegistry registry) {
         // Log interceptor for all paths
-        registry.addInterceptor(logInterceptor).addPathPatterns("/**");
+        registry.addInterceptor(logInterceptor).addPathPatterns("/**").order(0);
     }
 
     @Override

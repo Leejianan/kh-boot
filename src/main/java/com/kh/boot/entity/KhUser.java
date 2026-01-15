@@ -29,6 +29,9 @@ public class KhUser extends KhBaseEntity {
     @Schema(description = "Email", example = "john@example.com")
     private String email;
 
+    @Schema(description = "Avatar URL")
+    private String avatar;
+
     @Schema(description = "Status: 1-Normal, 0-Disabled", example = "1")
     private Integer status;
 
