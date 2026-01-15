@@ -18,30 +18,30 @@ import com.kh.boot.service.EmailService;
 import com.kh.boot.service.SmsService;
 import com.kh.boot.service.UserService;
 import com.kh.boot.util.JwtUtil;
+
+import java.util.Arrays;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Primary;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.ProviderManager;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
-import org.springframework.security.config.Customizer;
-import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.AuthenticationFailureHandler;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
-import org.springframework.web.cors.CorsConfiguration;
-import org.springframework.web.cors.CorsConfigurationSource;
-import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+import org.springframework.security.config.Customizer;
 
 @Configuration
 @EnableWebSecurity
@@ -70,9 +70,6 @@ public class SecurityConfig {
     private UserDetailsServiceImpl userDetailsService;
 
     @Autowired
-    private AuthenticationConfiguration authenticationConfiguration;
-
-    @Autowired
     private JwtUtil jwtUtil;
 
     @Autowired
@@ -81,23 +78,12 @@ public class SecurityConfig {
     @Value("${kh.security.rsa.private-key}")
     private String privateKey;
 
-    @Value("${kh.security.cors.enabled:true}")
-    private boolean corsEnabled;
-
-    @Value("${kh.security.cors.allowed-origins:*}")
-    private String allowedOrigins;
-
     @Bean
     @Order(Ordered.LOWEST_PRECEDENCE)
-    public SecurityFilterChain adminSecurityFilterChain(HttpSecurity http) throws Exception {
-        http
-                .csrf(csrf -> csrf.disable());
-
-        if (corsEnabled) {
-            http.cors(Customizer.withDefaults());
-        } else {
-            http.cors(cors -> cors.disable());
-        }
+    public SecurityFilterChain adminSecurityFilterChain(HttpSecurity http, AuthenticationManager authenticationManager)
+            throws Exception {
+        http.csrf(csrf -> csrf.disable())
+                .cors(Customizer.withDefaults());
 
         http
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
@@ -120,16 +106,16 @@ public class SecurityConfig {
         // manually to http.
 
         // SMS Filter
-        SmsAuthenticationFilter smsFilter = smsAuthenticationFilter(authenticationConfiguration);
+        SmsAuthenticationFilter smsFilter = smsAuthenticationFilter(authenticationManager);
         http.addFilterBefore(smsFilter, UsernamePasswordAuthenticationFilter.class);
 
         // Email Filter
-        EmailAuthenticationFilter emailFilter = emailAuthenticationFilter(authenticationConfiguration);
+        EmailAuthenticationFilter emailFilter = emailAuthenticationFilter(authenticationManager);
         http.addFilterBefore(emailFilter, UsernamePasswordAuthenticationFilter.class);
 
         // JSON Username/Password Filter
         JsonUsernamePasswordAuthenticationFilter jsonFilter = jsonUsernamePasswordAuthenticationFilter(
-                authenticationConfiguration);
+                authenticationManager);
         http.addFilterBefore(jsonFilter, UsernamePasswordAuthenticationFilter.class);
 
         http.addFilterBefore(jwtAuthenticationTokenFilter, UsernamePasswordAuthenticationFilter.class);
@@ -163,6 +149,17 @@ public class SecurityConfig {
         provider.setPasswordEncoder(passwordEncoder);
         provider.setHideUserNotFoundExceptions(false); // Make it easier to debug
         return provider;
+    }
+
+    @Bean
+    @Primary
+    public AuthenticationManager authenticationManager(
+            DaoAuthenticationProvider daoAuthenticationProvider,
+            SmsAuthenticationProvider smsAuthenticationProvider,
+            EmailAuthenticationProvider emailAuthenticationProvider) {
+        return new ProviderManager(
+                Arrays.asList(daoAuthenticationProvider, smsAuthenticationProvider,
+                        emailAuthenticationProvider));
     }
 
     private AuthenticationSuccessHandler authenticationSuccessHandler() {
@@ -199,19 +196,18 @@ public class SecurityConfig {
     }
 
     @Bean
-    public SmsAuthenticationFilter smsAuthenticationFilter(AuthenticationConfiguration authConfig) throws Exception {
+    public SmsAuthenticationFilter smsAuthenticationFilter(AuthenticationManager authenticationManager) {
         SmsAuthenticationFilter filter = new SmsAuthenticationFilter("/admin/auth/login/sms");
-        filter.setAuthenticationManager(authConfig.getAuthenticationManager());
+        filter.setAuthenticationManager(authenticationManager);
         filter.setAuthenticationSuccessHandler(authenticationSuccessHandler());
         filter.setAuthenticationFailureHandler(authenticationFailureHandler());
         return filter;
     }
 
     @Bean
-    public EmailAuthenticationFilter emailAuthenticationFilter(AuthenticationConfiguration authConfig)
-            throws Exception {
+    public EmailAuthenticationFilter emailAuthenticationFilter(AuthenticationManager authenticationManager) {
         EmailAuthenticationFilter filter = new EmailAuthenticationFilter("/admin/auth/login/email");
-        filter.setAuthenticationManager(authConfig.getAuthenticationManager());
+        filter.setAuthenticationManager(authenticationManager);
         filter.setAuthenticationSuccessHandler(authenticationSuccessHandler());
         filter.setAuthenticationFailureHandler(authenticationFailureHandler());
         return filter;
@@ -219,32 +215,14 @@ public class SecurityConfig {
 
     @Bean
     public JsonUsernamePasswordAuthenticationFilter jsonUsernamePasswordAuthenticationFilter(
-            AuthenticationConfiguration authConfig) throws Exception {
+            AuthenticationManager authenticationManager) {
         JsonUsernamePasswordAuthenticationFilter filter = new JsonUsernamePasswordAuthenticationFilter(
                 "/admin/auth/login");
-        filter.setAuthenticationManager(authConfig.getAuthenticationManager());
+        filter.setAuthenticationManager(authenticationManager);
         filter.setAuthenticationSuccessHandler(authenticationSuccessHandler());
         filter.setAuthenticationFailureHandler(authenticationFailureHandler());
         filter.setPrivateKey(privateKey);
         return filter;
-    }
-
-    @Bean
-    public CorsConfigurationSource corsConfigurationSource() {
-        CorsConfiguration configuration = new CorsConfiguration();
-        configuration.addAllowedOriginPattern(allowedOrigins);
-        configuration.addAllowedMethod("*");
-        configuration.addAllowedHeader("*");
-        configuration.setAllowCredentials(true);
-        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-        source.registerCorsConfiguration("/**", configuration);
-        return source;
-    }
-
-    @Bean
-    public AuthenticationManager authenticationManager(AuthenticationConfiguration authenticationConfiguration)
-            throws Exception {
-        return authenticationConfiguration.getAuthenticationManager();
     }
 
 }

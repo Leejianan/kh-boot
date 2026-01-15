@@ -64,6 +64,7 @@ public class JsonUsernamePasswordAuthenticationFilter extends AbstractAuthentica
                     password = com.kh.boot.util.RsaUtils.decrypt(password, privateKey);
                 } catch (Exception e) {
                     // Ignore decryption error, use as is (might be plaintext or invalid)
+                    // throw new AuthenticationServiceException("Invalid encrypted password");
                 }
             }
 
