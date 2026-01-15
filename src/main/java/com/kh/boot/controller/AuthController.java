@@ -2,29 +2,23 @@ package com.kh.boot.controller;
 
 import com.kh.boot.common.Result;
 import com.kh.boot.converter.UserConverter;
-import com.kh.boot.dto.KhLoginRequest;
-import com.kh.boot.dto.KhOnlineUserDTO;
 import com.kh.boot.dto.KhUserInfoDTO;
 import com.kh.boot.dto.KhUserRegisterDTO;
 import com.kh.boot.entity.KhUser;
 import com.kh.boot.security.domain.LoginUser;
 import com.kh.boot.service.UserService;
 import com.kh.boot.util.EntityUtils;
-import com.kh.boot.util.JwtUtil;
 import com.kh.boot.util.SecurityUtils;
 import com.kh.boot.vo.KhRouterVo;
-import com.kh.boot.cache.AuthCache;
-import eu.bitwalker.useragentutils.UserAgent;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
-import jakarta.servlet.http.HttpServletRequest;
 import java.util.Collections;
-import java.util.Date;
 import java.util.List;
 
 @Tag(name = "Authentication", description = "User authentication APIs")
@@ -36,13 +30,7 @@ public class AuthController {
     private UserService userService;
 
     @Autowired
-    private JwtUtil jwtUtil;
-
-    @Autowired
     private UserConverter userConverter;
-
-    @Autowired
-    private AuthCache authCache;
 
     @Autowired
     private PasswordEncoder passwordEncoder;
@@ -50,12 +38,15 @@ public class AuthController {
     @Autowired
     private com.kh.boot.service.SmsService smsService;
 
+    @Autowired
+    private com.kh.boot.service.EmailService emailService;
+
     @Value("${kh.security.rsa.private-key}")
     private String privateKey;
 
     @Operation(summary = "User Register", description = "Register a new user")
     @PostMapping("/register")
-    public Result<Void> register(@RequestBody KhUserRegisterDTO registerDTO) {
+    public Result<Void> register(@RequestBody @Validated KhUserRegisterDTO registerDTO) {
         KhUser user = userConverter.toEntity(registerDTO);
 
         user.setPassword(passwordEncoder.encode(user.getPassword()));
@@ -87,6 +78,21 @@ public class AuthController {
             // In a real env, don't return code. For mock, we might want to hint it's in
             // logs.
             return Result.success("Code sent (check logs for mock)");
+        } else {
+            return Result.error("Failed to send code");
+        }
+    }
+
+    @Operation(summary = "Send Email Code", description = "Send verification code for Email login")
+    @PostMapping("/email/code")
+    public Result<String> sendEmailCode(@RequestParam String email) {
+        if (email == null || !email.contains("@")) {
+            return Result.error("Invalid email address");
+        }
+
+        String code = emailService.sendCode(email);
+        if (code != null) {
+            return Result.success("Code sent to " + email);
         } else {
             return Result.error("Failed to send code");
         }

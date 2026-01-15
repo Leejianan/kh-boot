@@ -36,6 +36,7 @@ public interface UserConverter {
     @Mapping(target = "delFlag", ignore = true)
     @Mapping(target = "status", ignore = true)
     @Mapping(target = "auditStatus", ignore = true)
+    @Mapping(target = "avatar", ignore = true)
     com.kh.boot.entity.KhUser toEntity(com.kh.boot.dto.KhUserRegisterDTO dto);
 
     List<com.kh.boot.dto.KhUserDTO> toDtoList(List<com.kh.boot.entity.KhUser> users);

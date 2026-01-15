@@ -107,7 +107,11 @@ private String userCode; // 自动生成如: U-20240114-0001
 | `kh.security.rsa.public-key` | (内置默认) | **前端加密公钥**。需提供给前端 JS 库使用。 |
 | `kh.security.rsa.private-key` | (内置默认) | **后端解密私钥**。生产环境务必覆盖。 |
 | `kh.boot.serial-number.scan-packages` | `**.entity` | **流水号扫描包路径**。 |
+| `spring.mail.host` | `smtp.163.com` | **邮件服务器**。默认集成网易邮箱，配置 `username`/`password` 即可使用。 |
 | `spring.data.redis.host` | (无) | **Redis 坐标**。配置此项后，缓存与流水号生成器将自动升级为分布式版。 |
+| `kh.boot.index.enabled` | `true` | **默认首页开关**。设为 `false` 可关闭默认的 `/` 欢迎页，避免与业务项目首页冲突。 |
+| `kh.security.cors.enabled` | `true` | **跨域开关**。开发环境设为 `true`，生成环境如使用 Nginx 反代可设为 `false` 关闭。 |
+| `kh.security.cors.allowed-origins` | `*` | **允许跨域的源**。默认为所有，生产环境建议指定具体域名，如 `https://admin.example.com`。 |
 
 ---
 

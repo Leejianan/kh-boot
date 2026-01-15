@@ -1,6 +1,6 @@
-package com.kh.boot.security.sms;
+package com.kh.boot.security.email;
 
-import com.kh.boot.service.SmsService;
+import com.kh.boot.service.EmailService;
 import org.springframework.context.support.MessageSourceAccessor;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.BadCredentialsException;
@@ -10,36 +10,34 @@ import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.SpringSecurityMessageSource;
 import org.springframework.security.core.userdetails.UserDetails;
 
-public class SmsAuthenticationProvider implements AuthenticationProvider {
+public class EmailAuthenticationProvider implements AuthenticationProvider {
 
     protected MessageSourceAccessor messages = SpringSecurityMessageSource.getAccessor();
-    private SmsUserDetailsService userDetailsService;
-    private SmsService smsService;
+    private EmailUserDetailsService userDetailsService;
+    private EmailService emailService;
 
     @Override
     public Authentication authenticate(Authentication authentication) throws AuthenticationException {
-        SmsAuthenticationToken authenticationToken = (SmsAuthenticationToken) authentication;
+        EmailAuthenticationToken authenticationToken = (EmailAuthenticationToken) authentication;
 
-        String mobile = (String) authenticationToken.getPrincipal();
+        String email = (String) authenticationToken.getPrincipal();
         String code = (String) authenticationToken.getCredentials();
 
-        // 1. Verify SMS Code
-        if (!smsService.verifyCode(mobile, code)) {
+        // 1. Verify Email Code
+        if (!emailService.verifyCode(email, code)) {
             throw new BadCredentialsException(messages.getMessage(
                     "AbstractUserDetailsAuthenticationProvider.badCredentials",
                     "Bad credentials"));
         }
 
         // 2. Load User
-        UserDetails user = userDetailsService.loadUserByPhone(mobile);
+        UserDetails user = userDetailsService.loadUserByEmail(email);
         if (user == null) {
             throw new InternalAuthenticationServiceException(
                     "UserDetailsService returned null, which is an interface contract violation");
         }
 
-        // 3. Check Account Status (Standard checks handled by
-        // AbstractUserDetailsAuthenticationProvider usually, but we implement simpler
-        // here)
+        // 3. Check Account Status
         if (!user.isAccountNonLocked()) {
             throw new InternalAuthenticationServiceException("User account is locked");
         }
@@ -51,7 +49,7 @@ public class SmsAuthenticationProvider implements AuthenticationProvider {
         }
 
         // 4. Create Authenticated Token
-        SmsAuthenticationToken authenticationResult = new SmsAuthenticationToken(user, user.getAuthorities());
+        EmailAuthenticationToken authenticationResult = new EmailAuthenticationToken(user, user.getAuthorities());
         authenticationResult.setDetails(authenticationToken.getDetails());
 
         return authenticationResult;
@@ -59,14 +57,14 @@ public class SmsAuthenticationProvider implements AuthenticationProvider {
 
     @Override
     public boolean supports(Class<?> authentication) {
-        return (SmsAuthenticationToken.class.isAssignableFrom(authentication));
+        return (EmailAuthenticationToken.class.isAssignableFrom(authentication));
     }
 
-    public void setUserDetailsService(SmsUserDetailsService userDetailsService) {
+    public void setUserDetailsService(EmailUserDetailsService userDetailsService) {
         this.userDetailsService = userDetailsService;
     }
 
-    public void setSmsService(SmsService smsService) {
-        this.smsService = smsService;
+    public void setEmailService(EmailService emailService) {
+        this.emailService = emailService;
     }
 }

@@ -1,5 +1,6 @@
 package com.kh.boot.security.filter;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -17,6 +18,8 @@ public class JsonUsernamePasswordAuthenticationFilter extends AbstractAuthentica
 
     private static final String DEFAULT_FILTER_PROCESSES_URL = "/auth/login";
     private static final String HTTP_METHOD = "POST";
+
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
     public JsonUsernamePasswordAuthenticationFilter() {
         super(new AntPathRequestMatcher(DEFAULT_FILTER_PROCESSES_URL, HTTP_METHOD));
@@ -41,8 +44,9 @@ public class JsonUsernamePasswordAuthenticationFilter extends AbstractAuthentica
 
         if (request.getContentType().equals("application/json")
                 || request.getContentType().startsWith("application/json")) {
-            ObjectMapper mapper = new ObjectMapper();
-            Map<String, String> loginData = mapper.readValue(request.getInputStream(), Map.class);
+            Map<String, String> loginData = objectMapper.readValue(request.getInputStream(),
+                    new TypeReference<Map<String, String>>() {
+                    });
             String username = loginData.get("username");
             String password = loginData.get("password");
 

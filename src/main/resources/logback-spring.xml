@@ -60,15 +60,6 @@
         </filter>
     </appender>
 
-    <!-- Specific Loggers -->
-    <!-- Framework Base -->
-    <logger name="com.kh.boot" level="DEBUG" />
-    <!-- MyBatis SQL SQL Logic -->
-    <logger name="com.kh.boot.mapper" level="DEBUG" />
-    <!-- Spring Internal -->
-    <logger name="org.springframework" level="INFO" />
-    <logger name="org.springframework.security" level="INFO" />
-
     <!-- Root Logger -->
     <root level="INFO">
         <appender-ref ref="CONSOLE" />

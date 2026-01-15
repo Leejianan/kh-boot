@@ -1,17 +1,43 @@
 package com.kh.boot.entity;
 
 import com.baomidou.mybatisplus.annotation.TableName;
-import com.kh.boot.entity.base.KhBaseEntity;
+import com.kh.boot.constant.UserType;
+import com.kh.boot.security.domain.BaseAuthentication;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import java.io.Serial;
+import java.io.Serializable;
 import java.util.Date;
 
+import com.kh.boot.entity.base.KhBaseEntity;
+
+/**
+ * <p>
+ * User Table
+ * </p>
+ *
+ * @author harlan
+ * @since 2024-01-14
+ */
 @Data
 @EqualsAndHashCode(callSuper = true)
 @TableName("kh_user")
-@Schema(description = "User Entity")
-public class KhUser extends KhBaseEntity {
+@Schema(name = "KhUser", description = "User Table")
+public class KhUser extends KhBaseEntity implements BaseAuthentication {
+
+    @Serial
+    private static final long serialVersionUID = 1L;
+
+    @Override
+    public String getUserType() {
+        return UserType.ADMIN.getValue();
+    }
+
+    @Override
+    public Integer getStatus() {
+        return this.status;
+    }
 
     @Schema(description = "Business User Code")
     @com.kh.boot.annotation.BusinessCode(prefix = "U", dateFormat = "yyyyMMdd", width = 4)

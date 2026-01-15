@@ -113,16 +113,21 @@ public class LoginUser implements UserDetails {
      */
     private List<String> permissions;
 
-    public LoginUser(KhUser user, List<String> permissions) {
+    public LoginUser(BaseAuthentication user, List<String> permissions) {
         if (user != null) {
             this.userId = user.getId();
             this.username = user.getUsername();
             this.password = user.getPassword();
-            this.userCode = user.getUserCode();
-            this.email = user.getEmail();
-            this.phone = user.getPhone();
+            this.userType = user.getUserType();
             this.status = user.getStatus();
-            this.avatar = user.getAvatar();
+            // Extend with more fields if BaseAuthentication is expanded or use casting if
+            // needed for specific fields
+            if (user instanceof KhUser khUser) {
+                this.userCode = khUser.getUserCode();
+                this.email = khUser.getEmail();
+                this.phone = khUser.getPhone();
+                this.avatar = khUser.getAvatar();
+            }
         }
         this.permissions = permissions;
     }

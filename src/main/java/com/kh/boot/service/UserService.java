@@ -4,10 +4,12 @@ import com.baomidou.mybatisplus.extension.service.IService;
 import com.kh.boot.dto.KhUserDTO;
 import com.kh.boot.entity.KhUser;
 import com.kh.boot.vo.KhRouterVo;
+import com.kh.boot.security.sms.SmsUserDetailsService;
+import com.kh.boot.security.email.EmailUserDetailsService;
 
 import java.util.List;
 
-public interface UserService extends IService<KhUser> {
+public interface UserService extends IService<KhUser>, SmsUserDetailsService, EmailUserDetailsService {
 
     KhUser findByUsername(String username);
 
