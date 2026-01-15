@@ -116,20 +116,20 @@ public class SecurityConfig {
                         .authenticationEntryPoint(restAuthenticationEntryPoint)
                         .accessDeniedHandler(restAccessDeniedHandler));
 
-        http.authenticationProvider(smsAuthenticationProvider());
-        http.authenticationProvider(emailAuthenticationProvider());
-        http.authenticationProvider(daoAuthenticationProvider());
+        // Providers are auto-configured because they are @Beans. No need to add them
+        // manually to http.
 
         // SMS Filter
-        SmsAuthenticationFilter smsFilter = smsAuthenticationFilter();
+        SmsAuthenticationFilter smsFilter = smsAuthenticationFilter(authenticationConfiguration);
         http.addFilterBefore(smsFilter, UsernamePasswordAuthenticationFilter.class);
 
         // Email Filter
-        EmailAuthenticationFilter emailFilter = emailAuthenticationFilter();
+        EmailAuthenticationFilter emailFilter = emailAuthenticationFilter(authenticationConfiguration);
         http.addFilterBefore(emailFilter, UsernamePasswordAuthenticationFilter.class);
 
         // JSON Username/Password Filter
-        JsonUsernamePasswordAuthenticationFilter jsonFilter = jsonUsernamePasswordAuthenticationFilter();
+        JsonUsernamePasswordAuthenticationFilter jsonFilter = jsonUsernamePasswordAuthenticationFilter(
+                authenticationConfiguration);
         http.addFilterBefore(jsonFilter, UsernamePasswordAuthenticationFilter.class);
 
         http.addFilterBefore(jwtAuthenticationTokenFilter, UsernamePasswordAuthenticationFilter.class);
@@ -196,28 +196,30 @@ public class SecurityConfig {
     }
 
     @Bean
-    public SmsAuthenticationFilter smsAuthenticationFilter() throws Exception {
+    public SmsAuthenticationFilter smsAuthenticationFilter(AuthenticationConfiguration authConfig) throws Exception {
         SmsAuthenticationFilter filter = new SmsAuthenticationFilter("/admin/auth/login/sms");
-        filter.setAuthenticationManager(authenticationManager(authenticationConfiguration));
+        filter.setAuthenticationManager(authConfig.getAuthenticationManager());
         filter.setAuthenticationSuccessHandler(authenticationSuccessHandler());
         filter.setAuthenticationFailureHandler(authenticationFailureHandler());
         return filter;
     }
 
     @Bean
-    public EmailAuthenticationFilter emailAuthenticationFilter() throws Exception {
+    public EmailAuthenticationFilter emailAuthenticationFilter(AuthenticationConfiguration authConfig)
+            throws Exception {
         EmailAuthenticationFilter filter = new EmailAuthenticationFilter("/admin/auth/login/email");
-        filter.setAuthenticationManager(authenticationManager(authenticationConfiguration));
+        filter.setAuthenticationManager(authConfig.getAuthenticationManager());
         filter.setAuthenticationSuccessHandler(authenticationSuccessHandler());
         filter.setAuthenticationFailureHandler(authenticationFailureHandler());
         return filter;
     }
 
     @Bean
-    public JsonUsernamePasswordAuthenticationFilter jsonUsernamePasswordAuthenticationFilter() throws Exception {
+    public JsonUsernamePasswordAuthenticationFilter jsonUsernamePasswordAuthenticationFilter(
+            AuthenticationConfiguration authConfig) throws Exception {
         JsonUsernamePasswordAuthenticationFilter filter = new JsonUsernamePasswordAuthenticationFilter(
                 "/admin/auth/login");
-        filter.setAuthenticationManager(authenticationManager(authenticationConfiguration));
+        filter.setAuthenticationManager(authConfig.getAuthenticationManager());
         filter.setAuthenticationSuccessHandler(authenticationSuccessHandler());
         filter.setAuthenticationFailureHandler(authenticationFailureHandler());
         filter.setPrivateKey(privateKey);
