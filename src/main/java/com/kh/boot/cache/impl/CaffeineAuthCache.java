@@ -93,4 +93,23 @@ public class CaffeineAuthCache implements AuthCache {
     public void putOnlineUser(KhOnlineUserDTO onlineUser) {
         onlineUserCache.put(getTypedKey(onlineUser.getUsername(), onlineUser.getUserType()), onlineUser);
     }
+
+    @Override
+    public com.kh.boot.common.PageData<KhOnlineUserDTO> pageOnlineUsers(int current, int size) {
+        List<KhOnlineUserDTO> allUsers = new ArrayList<>(onlineUserCache.asMap().values());
+        // Sort by login time (descending) if possible, but DTO doesn't strictly have
+        // login time field visible here.
+        // Assuming random order is fine for local cache or sort by username.
+        // Let's just do simple sublist.
+
+        int total = allUsers.size();
+        int fromIndex = (current - 1) * size;
+        if (fromIndex >= total) {
+            return new com.kh.boot.common.PageData<>((long) total, (long) current, (long) size, new ArrayList<>());
+        }
+        int toIndex = Math.min(fromIndex + size, total);
+        List<KhOnlineUserDTO> pageRecords = allUsers.subList(fromIndex, toIndex);
+
+        return new com.kh.boot.common.PageData<>((long) total, (long) current, (long) size, pageRecords);
+    }
 }

@@ -49,4 +49,9 @@ public interface AuthCache {
      * Cache online user details
      */
     void putOnlineUser(KhOnlineUserDTO onlineUser);
+
+    /**
+     * Get online users with pagination
+     */
+    com.kh.boot.common.PageData<KhOnlineUserDTO> pageOnlineUsers(int current, int size);
 }

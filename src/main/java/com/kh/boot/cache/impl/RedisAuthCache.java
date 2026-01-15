@@ -32,6 +32,7 @@ public class RedisAuthCache implements AuthCache {
     private static final String KEY_USER = "auth:user:";
     private static final String KEY_TOKEN = "auth:token:";
     private static final String KEY_ONLINE = "auth:online:";
+    private static final String KEY_ONLINE_IDS = "auth:online:ids";
 
     private String getTypedKey(String prefix, String username, String userType) {
         return prefix + userType + ":" + username;
@@ -68,6 +69,8 @@ public class RedisAuthCache implements AuthCache {
         redisTemplate.delete(getTypedKey(KEY_USER, username, userType));
         redisTemplate.delete(getTypedKey(KEY_TOKEN, username, userType));
         redisTemplate.delete(getTypedKey(KEY_ONLINE, username, userType));
+        // Remove from ZSet
+        redisTemplate.opsForZSet().remove(KEY_ONLINE_IDS, userType + ":" + username);
     }
 
     @Override
@@ -95,5 +98,51 @@ public class RedisAuthCache implements AuthCache {
     public void putOnlineUser(KhOnlineUserDTO onlineUser) {
         String key = getTypedKey(KEY_ONLINE, onlineUser.getUsername(), onlineUser.getUserType());
         redisTemplate.opsForValue().set(key, onlineUser, timeout, TimeUnit.MINUTES);
+        // Add to ZSet with current timestamp as score
+        redisTemplate.opsForZSet().add(KEY_ONLINE_IDS, onlineUser.getUserType() + ":" + onlineUser.getUsername(),
+                System.currentTimeMillis());
+    }
+
+    @Override
+    public com.kh.boot.common.PageData<KhOnlineUserDTO> pageOnlineUsers(int current, int size) {
+        long total = redisTemplate.opsForZSet().zCard(KEY_ONLINE_IDS);
+        if (total == 0) {
+            return new com.kh.boot.common.PageData<>(0L, (long) current, (long) size, new ArrayList<>());
+        }
+
+        long start = (long) (current - 1) * size;
+        long end = start + size - 1;
+
+        // ZREVRANGE for descending order (newest first)
+        Set<Object> members = redisTemplate.opsForZSet().reverseRange(KEY_ONLINE_IDS, start, end);
+        if (members == null || members.isEmpty()) {
+            return new com.kh.boot.common.PageData<>(total, (long) current, (long) size, new ArrayList<>());
+        }
+
+        List<String> keys = members.stream()
+                .map(obj -> {
+                    String member = (String) obj;
+                    // member format: userType:username
+                    // key format: auth:online:userType:username
+                    // Need to split to reconstruct key correctly using logic of getTypedKey logic?
+                    // Actually getTypedKey("auth:online:", username, userType) -> "auth:online:" +
+                    // userType + ":" + username
+                    // So just prepending "auth:online:" to member string works if member is
+                    // userType:username
+                    return KEY_ONLINE + member;
+                })
+                .collect(Collectors.toList());
+
+        List<Object> values = redisTemplate.opsForValue().multiGet(keys);
+        List<KhOnlineUserDTO> records = new ArrayList<>();
+        if (values != null) {
+            for (Object v : values) {
+                if (v instanceof KhOnlineUserDTO) {
+                    records.add((KhOnlineUserDTO) v);
+                }
+            }
+        }
+
+        return new com.kh.boot.common.PageData<>(total, (long) current, (long) size, records);
     }
 }

@@ -21,11 +21,11 @@ public class OnlineUserController extends BaseController {
     @Autowired
     private AuthCache authCache;
 
-    @Operation(summary = "List Online Users", description = "Get details of all currently logged-in users")
+    @Operation(summary = "List Online Users", description = "Get details of currently logged-in users with pagination")
     @GetMapping("/list")
     @PreAuthorize("hasAuthority('system:online:list')")
-    public Result<List<KhOnlineUserDTO>> list() {
-        return success(authCache.listOnlineUsers());
+    public Result<PageData<KhOnlineUserDTO>> list(com.kh.boot.query.BaseQuery query) {
+        return success(authCache.pageOnlineUsers(query.getCurrent(), query.getSize()));
     }
 
     @Operation(summary = "Force Logout User", description = "Invalidate user token and force logout")
