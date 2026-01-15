@@ -118,9 +118,43 @@ private String userCode; // 自动生成如: U-20240114-0001
 
 ---
 
-## 🔗 文档访问
-启动引用的项目后，访问：
-`http://localhost:8080/doc.html`
+## � 接口文档 (OpenAPI)
+系统集成了 **Knife4j** (OpenAPI 3增强版)，提供了优雅的接口文档与调试界面。
+
+### 1. 访问地址
+启动项目后访问：`http://localhost:8080/doc.html` (或你的 `server.servlet.context-path` + `/doc.html`)
+
+### 2. 接口分组架构 (Decoupled Architecture)
+KH-Boot 采用了**模块化分组**设计，实现了框架代码与业务代码的完全解耦：
+- **框架分组 (System Management)**：由 `kh-boot` 定义，包含用户、角色、权限、日志等基础管理接口。
+- **业务分组 (Business API)**：由业务模块（如 `firework`）自行定义。
+
+**如何在业务模块中新增分组？**
+只需在你的配置类中注册 `GroupedOpenApi` Bean 即可，无需修改 `kh-boot` 源码：
+```java
+@Bean
+public GroupedOpenApi orderApi() {
+    return GroupedOpenApi.builder()
+            .group("3-Order System") // 分组名称
+            .packagesToScan("com.example.project.order") // 扫描包路径
+            .build();
+}
+```
+
+### 3. 公开接口配置
+系统已内置了标准的公开接口白名单（`PUBLIC_ENDPOINTS`），这些接口在文档中不会显示“小锁”图标，无需 Token 即可调用：
+- `/login`, `/register`, `/error`
+- `/sms/code`, `/login/sms` (短信验证与登录)
+- `/email/code`, `/login/email` (邮箱验证与登录)
+
+### 4. 文档配置
+你可以在 `application.properties` 中自定义文档信息：
+
+| 配置项 | 默认值 | 说明 |
+| :--- | :--- | :--- |
+| `kh.openapi.title` | `KH-Boot API Documentation` | 文档标题 |
+| `kh.openapi.description` | `Backend APIs powered by KH-Boot` | 文档描述 |
+| `kh.openapi.version` | `v1.0.0` | 文档版本 |
 
 ---
 
