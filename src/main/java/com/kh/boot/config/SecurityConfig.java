@@ -153,11 +153,14 @@ public class SecurityConfig {
         return provider;
     }
 
+    @Autowired
+    private PasswordEncoder passwordEncoder;
+
     @Bean
     public DaoAuthenticationProvider daoAuthenticationProvider() {
         DaoAuthenticationProvider provider = new DaoAuthenticationProvider();
         provider.setUserDetailsService(userDetailsService);
-        provider.setPasswordEncoder(passwordEncoder());
+        provider.setPasswordEncoder(passwordEncoder);
         provider.setHideUserNotFoundExceptions(false); // Make it easier to debug
         return provider;
     }
@@ -244,8 +247,4 @@ public class SecurityConfig {
         return authenticationConfiguration.getAuthenticationManager();
     }
 
-    @Bean
-    public PasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder();
-    }
 }
