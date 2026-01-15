@@ -89,7 +89,8 @@ public class SecurityConfig {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .securityMatcher("/**") // Explicitly state this is the default/fallback
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers(HttpMethod.POST, "/admin/auth/login", "/admin/auth/register",
+                        .requestMatchers(HttpMethod.POST, "/admin/auth/login",
+
                                 "/admin/auth/sms/code", "/admin/auth/login/sms", "/admin/auth/email/code",
                                 "/admin/auth/login/email")
                         .permitAll()

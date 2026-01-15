@@ -60,7 +60,7 @@ public class OpenApiConfig {
 
         private static final String[] PUBLIC_ENDPOINTS = {
                         "/login",
-                        "/register",
+
                         "/error",
                         "/sms/code",
                         "/email/code",

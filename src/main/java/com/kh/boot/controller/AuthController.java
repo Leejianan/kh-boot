@@ -1,22 +1,17 @@
 package com.kh.boot.controller;
 
 import com.kh.boot.common.Result;
-import com.kh.boot.converter.UserConverter;
 import com.kh.boot.dto.*;
-import com.kh.boot.entity.KhUser;
 import com.kh.boot.security.domain.LoginUser;
 import com.kh.boot.service.EmailService;
 import com.kh.boot.service.SmsService;
 import com.kh.boot.service.UserService;
-import com.kh.boot.util.EntityUtils;
 import com.kh.boot.util.SecurityUtils;
 import com.kh.boot.vo.KhRouterVo;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Collections;
@@ -29,9 +24,6 @@ public class AuthController {
 
     @Autowired
     private UserService userService;
-
-    @Autowired
-    private PasswordEncoder passwordEncoder;
 
     @Autowired
     private SmsService smsService;
@@ -61,27 +53,6 @@ public class AuthController {
     public Result<String> emailLogin(@RequestParam String email, @RequestParam String code) {
         // Handled by Security Filter
         return Result.success("Login Success", null);
-    }
-
-    @Operation(summary = "User Register", description = "Register a new user")
-    @PostMapping("/register")
-    public Result<Void> register(@RequestBody @Validated KhUserRegisterDTO registerDTO) {
-        KhUser user = UserConverter.INSTANCE.toEntity(registerDTO);
-
-        user.setPassword(passwordEncoder.encode(user.getPassword()));
-        user.setStatus(1); // Normal
-        user.setAuditStatus(1); // Approved by default for simple scaffold
-
-        EntityUtils.initInsert(user);
-
-        // In production, should check if user exists
-        boolean success = userService.save(user);
-
-        if (success) {
-            return Result.success("注册成功", null);
-        } else {
-            return Result.error(500, "注册失败");
-        }
     }
 
     @Operation(summary = "Send SMS Code", description = "Send verification code for SMS login")
