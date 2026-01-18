@@ -6,13 +6,10 @@ import com.kh.boot.dto.KhUserUpdateDTO;
 import com.kh.boot.entity.KhUser;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
-import org.mapstruct.factory.Mappers;
 import java.util.List;
 
-@Mapper
+@Mapper(componentModel = "spring")
 public interface UserConverter {
-
-    UserConverter INSTANCE = Mappers.getMapper(UserConverter.class);
 
     KhUserDTO toDto(KhUser user);
 
@@ -57,6 +54,23 @@ public interface UserConverter {
     @Mapping(target = "delFlag", ignore = true)
     @Mapping(target = "auditStatus", ignore = true)
     KhUser toEntity(KhUserUpdateDTO dto);
+
+    @Mapping(target = "id", ignore = true)
+    @Mapping(target = "userCode", ignore = true)
+    @Mapping(target = "password", ignore = true)
+    @Mapping(target = "status", ignore = true)
+    @Mapping(target = "auditStatus", ignore = true)
+    @Mapping(target = "auditTime", ignore = true)
+    @Mapping(target = "auditor", ignore = true)
+    @Mapping(target = "createTime", ignore = true)
+    @Mapping(target = "updateTime", ignore = true)
+    @Mapping(target = "createBy", ignore = true)
+    @Mapping(target = "createByName", ignore = true)
+    @Mapping(target = "updateBy", ignore = true)
+    @Mapping(target = "updateByName", ignore = true)
+    @Mapping(target = "version", ignore = true)
+    @Mapping(target = "delFlag", ignore = true)
+    KhUser toEntity(com.kh.boot.dto.KhUserProfileDTO dto);
 
     List<KhUserDTO> toDtoList(List<KhUser> users);
 }

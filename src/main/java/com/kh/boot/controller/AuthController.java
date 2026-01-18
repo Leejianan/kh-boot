@@ -1,7 +1,9 @@
 package com.kh.boot.controller;
 
+import com.kh.boot.cache.AuthCache;
 import com.kh.boot.common.Result;
 import com.kh.boot.dto.*;
+import java.util.stream.Collectors;
 import com.kh.boot.security.domain.LoginUser;
 import com.kh.boot.service.EmailService;
 import com.kh.boot.service.SmsService;
@@ -12,9 +14,9 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.Collections;
 import java.util.List;
 
 @Tag(name = "Authentication", description = "User authentication APIs")
@@ -30,6 +32,9 @@ public class AuthController {
 
     @Autowired
     private EmailService emailService;
+
+    @Autowired
+    private AuthCache authCache;
 
     @Value("${kh.security.rsa.private-key}")
     private String privateKey;
@@ -88,8 +93,9 @@ public class AuthController {
         }
     }
 
-    @Operation(summary = "Get User Info", description = "Get current logged-in user info and permissions")
+    @Operation(summary = "Get User Info", description = "Get current logged-in user info, permissions and menus")
     @GetMapping("/user/info")
+    @PreAuthorize("hasRole('ADMIN')")
     public Result<KhUserInfoDTO> info() {
         LoginUser loginUser = SecurityUtils.getLoginUser();
 
@@ -106,14 +112,37 @@ public class AuthController {
             userInfoDTO.setAvatar(loginUser.getAvatar());
         }
 
-        userInfoDTO.setRoles(Collections.singletonList("admin"));
+        // Fetch real roles from DB
+        String userId = loginUser.getUserId();
+        List<com.kh.boot.entity.KhRole> roleList = userService.getRolesByUserId(userId);
+
+        // If no roles found, fallback to empty list (or default role if logic requires)
+        List<String> roleKeys = roleList.stream()
+                .map(com.kh.boot.entity.KhRole::getRoleKey)
+                .collect(Collectors.toList());
+        List<String> roleNames = roleList.stream()
+                .map(com.kh.boot.entity.KhRole::getName)
+                .collect(Collectors.toList());
+
+        userInfoDTO.setRoles(roleKeys);
+        userInfoDTO.setRoleNames(roleNames);
         userInfoDTO.setPermissions(loginUser.getPermissions());
+
+        // Get menus from cache, or load from DB if not cached
+        // Reuse userId from above
+        List<KhRouterVo> menus = authCache.getMenus(userId);
+        if (menus == null) {
+            menus = userService.getMenusByUserId(userId);
+            authCache.putMenus(userId, menus);
+        }
+        userInfoDTO.setMenus(menus);
 
         return Result.success(userInfoDTO);
     }
 
-    @Operation(summary = "Get User Menus", description = "Get dynamic menu tree for frontend")
+    @Operation(summary = "Get User Menus", description = "Get dynamic menu tree for frontend (deprecated, use /user/info instead)")
     @GetMapping("/user/menus")
+    @Deprecated
     public Result<List<KhRouterVo>> getMenus() {
         String userId = SecurityUtils.getUserId();
 
@@ -121,6 +150,26 @@ public class AuthController {
             return Result.error("未找到用户信息");
         }
 
-        return Result.success(userService.getMenusByUserId(userId));
+        // Also use cache here for consistency
+        List<KhRouterVo> menus = authCache.getMenus(userId);
+        if (menus == null) {
+            menus = userService.getMenusByUserId(userId);
+            authCache.putMenus(userId, menus);
+        }
+        return Result.success(menus);
+    }
+
+    @Operation(summary = "Heartbeat Check", description = "Check if current user session is still valid")
+    @GetMapping("/heartbeat")
+    public Result<Boolean> heartbeat() {
+        LoginUser loginUser = SecurityUtils.getLoginUser();
+
+        if (loginUser == null) {
+            return Result.success(false);
+        }
+
+        // Check if token is still in cache
+        boolean isOnline = authCache.containsUser(loginUser.getUsername(), loginUser.getUserType());
+        return Result.success(isOnline);
     }
 }

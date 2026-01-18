@@ -55,6 +55,12 @@ public class KhUser extends KhBaseEntity implements BaseAuthentication {
     @Schema(description = "Email", example = "john@example.com")
     private String email;
 
+    @Schema(description = "Real Name", example = "John Doe")
+    private String realName;
+
+    @Schema(description = "Gender: 0-Unknown, 1-Male, 2-Female", example = "1")
+    private Integer gender;
+
     @Schema(description = "Avatar URL")
     private String avatar;
 

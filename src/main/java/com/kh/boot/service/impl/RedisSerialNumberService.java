@@ -88,11 +88,42 @@ public class RedisSerialNumberService implements SerialNumberService {
 
     @Override
     public void saveRule(KhSerialNumber serialNumber) {
-        if (serialNumber.getId() == null) {
-            serialNumber.setId(UUID.randomUUID().toString());
-            serialNumberMapper.insert(serialNumber);
+        // Check if rule already exists by ID or Business Key
+        KhSerialNumber existing = null;
+        if (serialNumber.getId() != null) {
+            existing = serialNumberMapper.selectById(serialNumber.getId());
         } else {
-            serialNumberMapper.updateById(serialNumber);
+            existing = serialNumberMapper.selectOne(new QueryWrapper<KhSerialNumber>()
+                    .eq("business_key", serialNumber.getBusinessKey()));
+        }
+
+        if (existing == null) {
+            if (serialNumber.getId() == null) {
+                serialNumber.setId(UUID.randomUUID().toString().replace("-", ""));
+            }
+            try {
+                serialNumberMapper.insert(serialNumber);
+            } catch (Exception e) {
+                // Concurrency conflict: verify if it really exists now
+                KhSerialNumber retrySelect = serialNumberMapper.selectOne(new QueryWrapper<KhSerialNumber>()
+                        .eq("business_key", serialNumber.getBusinessKey()));
+                if (retrySelect != null) {
+                    // Found it after all (race condition), perform update
+                    retrySelect.setRulePrefix(serialNumber.getRulePrefix());
+                    retrySelect.setRuleDateFormat(serialNumber.getRuleDateFormat());
+                    retrySelect.setRuleWidth(serialNumber.getRuleWidth());
+                    serialNumberMapper.updateById(retrySelect);
+                } else {
+                    log.warn("Failed to insert rule for [{}]: {}", serialNumber.getBusinessKey(), e.getMessage());
+                }
+            }
+        } else {
+            // Update existing rule properties
+            existing.setRulePrefix(serialNumber.getRulePrefix());
+            existing.setRuleDateFormat(serialNumber.getRuleDateFormat());
+            existing.setRuleWidth(serialNumber.getRuleWidth());
+            serialNumber.setId(existing.getId());
+            serialNumberMapper.updateById(existing);
         }
     }
 

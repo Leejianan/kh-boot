@@ -24,6 +24,12 @@ public class KhUserUpdateDTO implements Serializable {
     @Schema(description = "Email")
     private String email;
 
+    @Schema(description = "Real Name")
+    private String realName;
+
+    @Schema(description = "Gender: 0-Unknown, 1-Male, 2-Female")
+    private Integer gender;
+
     @Schema(description = "Avatar URL")
     private String avatar;
 

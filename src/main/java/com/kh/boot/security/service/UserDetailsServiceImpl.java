@@ -25,6 +25,7 @@ public class UserDetailsServiceImpl implements UserDetailsService {
         }
         // Load permissions
         List<String> permissions = userService.getPermissionsByUserId(user.getId());
+        permissions.add("ROLE_ADMIN"); // Generic Role Injection
 
         LoginUser loginUser = new LoginUser(user, permissions);
         loginUser.setUserType("admin");

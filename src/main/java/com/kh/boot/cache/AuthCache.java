@@ -54,4 +54,24 @@ public interface AuthCache {
      * Get online users with pagination
      */
     com.kh.boot.common.PageData<KhOnlineUserDTO> pageOnlineUsers(int current, int size);
+
+    /**
+     * Cache user menus
+     */
+    void putMenus(String userId, java.util.List<com.kh.boot.vo.KhRouterVo> menus);
+
+    /**
+     * Get user menus from cache
+     */
+    java.util.List<com.kh.boot.vo.KhRouterVo> getMenus(String userId);
+
+    /**
+     * Evict specific user's menu cache
+     */
+    void evictMenus(String userId);
+
+    /**
+     * Evict all users' menu cache (when permissions change)
+     */
+    void evictAllMenus();
 }

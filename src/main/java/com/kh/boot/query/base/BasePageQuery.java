@@ -23,8 +23,8 @@ public class BasePageQuery implements Serializable {
     @Serial
     private static final long serialVersionUID = 1L;
 
-    @Schema(description = "Page Number", example = "1", defaultValue = "1")
-    private Integer page = 1;
+    @Schema(description = "Page Number (Current)", example = "1", defaultValue = "1")
+    private Integer current = 1;
 
     @Schema(description = "Page Size", example = "10", defaultValue = "10")
     private Integer size = 10;
@@ -40,7 +40,7 @@ public class BasePageQuery implements Serializable {
      */
     public <T> com.baomidou.mybatisplus.extension.plugins.pagination.Page<T> toPage() {
         com.baomidou.mybatisplus.extension.plugins.pagination.Page<T> pageParam = new com.baomidou.mybatisplus.extension.plugins.pagination.Page<>(
-                page, size);
+                current, size);
         if (org.springframework.util.StringUtils.hasText(orderBy)) {
             com.baomidou.mybatisplus.core.metadata.OrderItem item = isAsc
                     ? OrderItem.asc(StringUtils.camelToUnderline(orderBy))

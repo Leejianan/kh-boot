@@ -46,7 +46,12 @@ public class SerialNumberGenerator {
                 try {
                     serialNumberService.saveRule(sn);
                 } catch (Exception e) {
-                    log.error("Failed to pre-cache rule for [{}]: {}", businessKey, e.getMessage());
+                    if (e.getMessage() != null && (e.getMessage().contains("Duplicate entry")
+                            || e.getMessage().contains("ConstraintViolationException"))) {
+                        log.warn("Rule for [{}] already exists (duplicate entry ignored).", businessKey);
+                    } else {
+                        log.error("Failed to pre-cache rule for [{}]: {}", businessKey, e.getMessage());
+                    }
                 }
             }
         }

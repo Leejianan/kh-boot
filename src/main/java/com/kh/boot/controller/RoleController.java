@@ -67,4 +67,10 @@ public class RoleController extends BaseController {
     public Result<List<String>> getRolePermissions(@PathVariable String id) {
         return success(roleService.getRolePermissionIds(id));
     }
+
+    @Operation(summary = "Get All Roles")
+    @GetMapping("/list")
+    public Result<List<KhRoleDTO>> list() {
+        return success(roleService.listAll());
+    }
 }

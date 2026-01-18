@@ -21,4 +21,6 @@ public interface RoleService extends IService<KhRole> {
     void assignPermissions(String roleId, List<String> permissionIds);
 
     List<String> getRolePermissionIds(String roleId);
+
+    List<KhRoleDTO> listAll();
 }

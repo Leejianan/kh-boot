@@ -145,4 +145,36 @@ public class RedisAuthCache implements AuthCache {
 
         return new com.kh.boot.common.PageData<>(total, (long) current, (long) size, records);
     }
+
+    private static final String KEY_MENUS = "auth:menus:";
+
+    @Override
+    public void putMenus(String userId, List<com.kh.boot.vo.KhRouterVo> menus) {
+        String key = KEY_MENUS + userId;
+        redisTemplate.opsForValue().set(key, menus, timeout, TimeUnit.MINUTES);
+    }
+
+    @Override
+    @SuppressWarnings("unchecked")
+    public List<com.kh.boot.vo.KhRouterVo> getMenus(String userId) {
+        String key = KEY_MENUS + userId;
+        Object value = redisTemplate.opsForValue().get(key);
+        if (value instanceof List) {
+            return (List<com.kh.boot.vo.KhRouterVo>) value;
+        }
+        return null;
+    }
+
+    @Override
+    public void evictMenus(String userId) {
+        redisTemplate.delete(KEY_MENUS + userId);
+    }
+
+    @Override
+    public void evictAllMenus() {
+        Set<String> keys = redisTemplate.keys(KEY_MENUS + "*");
+        if (keys != null && !keys.isEmpty()) {
+            redisTemplate.delete(keys);
+        }
+    }
 }

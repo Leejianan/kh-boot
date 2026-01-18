@@ -3,6 +3,7 @@ package com.kh.boot.cache.impl;
 import com.kh.boot.cache.AuthCache;
 import com.kh.boot.security.domain.LoginUser;
 import com.kh.boot.dto.KhOnlineUserDTO;
+import com.kh.boot.vo.KhRouterVo;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import org.springframework.beans.factory.annotation.Value;
@@ -28,6 +29,7 @@ public class CaffeineAuthCache implements AuthCache {
     private Cache<String, LoginUser> userCache;
     private Cache<String, String> tokenCache;
     private Cache<String, KhOnlineUserDTO> onlineUserCache;
+    private Cache<String, List<KhRouterVo>> menuCache;
 
     @PostConstruct
     public void init() {
@@ -42,6 +44,11 @@ public class CaffeineAuthCache implements AuthCache {
                 .build();
 
         onlineUserCache = Caffeine.newBuilder()
+                .expireAfterAccess(timeout, TimeUnit.MINUTES)
+                .maximumSize(10000)
+                .build();
+
+        menuCache = Caffeine.newBuilder()
                 .expireAfterAccess(timeout, TimeUnit.MINUTES)
                 .maximumSize(10000)
                 .build();
@@ -97,10 +104,6 @@ public class CaffeineAuthCache implements AuthCache {
     @Override
     public com.kh.boot.common.PageData<KhOnlineUserDTO> pageOnlineUsers(int current, int size) {
         List<KhOnlineUserDTO> allUsers = new ArrayList<>(onlineUserCache.asMap().values());
-        // Sort by login time (descending) if possible, but DTO doesn't strictly have
-        // login time field visible here.
-        // Assuming random order is fine for local cache or sort by username.
-        // Let's just do simple sublist.
 
         int total = allUsers.size();
         int fromIndex = (current - 1) * size;
@@ -111,5 +114,25 @@ public class CaffeineAuthCache implements AuthCache {
         List<KhOnlineUserDTO> pageRecords = allUsers.subList(fromIndex, toIndex);
 
         return new com.kh.boot.common.PageData<>((long) total, (long) current, (long) size, pageRecords);
+    }
+
+    @Override
+    public void putMenus(String userId, List<KhRouterVo> menus) {
+        menuCache.put(userId, menus);
+    }
+
+    @Override
+    public List<KhRouterVo> getMenus(String userId) {
+        return menuCache.getIfPresent(userId);
+    }
+
+    @Override
+    public void evictMenus(String userId) {
+        menuCache.invalidate(userId);
+    }
+
+    @Override
+    public void evictAllMenus() {
+        menuCache.invalidateAll();
     }
 }

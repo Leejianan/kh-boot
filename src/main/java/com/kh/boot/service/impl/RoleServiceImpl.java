@@ -8,8 +8,12 @@ import com.kh.boot.converter.RoleConverter;
 import com.kh.boot.dto.KhRoleDTO;
 import com.kh.boot.entity.KhRole;
 import com.kh.boot.entity.KhRolePermission;
+import com.kh.boot.entity.KhUser;
+import com.kh.boot.entity.KhUserRole;
 import com.kh.boot.mapper.RoleMapper;
 import com.kh.boot.mapper.RolePermissionMapper;
+import com.kh.boot.mapper.UserMapper;
+import com.kh.boot.mapper.UserRoleMapper;
 import com.kh.boot.query.RoleQuery;
 import com.kh.boot.service.RoleService;
 import com.kh.boot.util.EntityUtils;
@@ -20,12 +24,25 @@ import org.springframework.util.StringUtils;
 
 import java.util.List;
 import java.util.stream.Collectors;
+import com.kh.boot.cache.AuthCache;
 
 @Service
 public class RoleServiceImpl extends ServiceImpl<RoleMapper, KhRole> implements RoleService {
 
     @Autowired
     private RolePermissionMapper rolePermissionMapper;
+
+    @Autowired
+    private RoleConverter roleConverter;
+
+    @Autowired
+    private AuthCache authCache;
+
+    @Autowired
+    private UserRoleMapper userRoleMapper;
+
+    @Autowired
+    private UserMapper userMapper;
 
     @Override
     public IPage<KhRoleDTO> getRolePage(RoleQuery query) {
@@ -39,19 +56,19 @@ public class RoleServiceImpl extends ServiceImpl<RoleMapper, KhRole> implements 
         }
 
         IPage<KhRole> rolePage = baseMapper.selectPage(pageParam, wrapper);
-        return rolePage.convert(RoleConverter.INSTANCE::toDto);
+        return rolePage.convert(roleConverter::toDto);
     }
 
     @Override
     public void addRole(KhRoleDTO roleDTO) {
-        KhRole role = RoleConverter.INSTANCE.toEntity(roleDTO);
+        KhRole role = roleConverter.toEntity(roleDTO);
         EntityUtils.initInsert(role);
         baseMapper.insert(role);
     }
 
     @Override
     public void updateRole(KhRoleDTO roleDTO) {
-        KhRole role = RoleConverter.INSTANCE.toEntity(roleDTO);
+        KhRole role = roleConverter.toEntity(roleDTO);
         EntityUtils.initUpdate(role);
         baseMapper.updateById(role);
     }
@@ -79,6 +96,19 @@ public class RoleServiceImpl extends ServiceImpl<RoleMapper, KhRole> implements 
                 rolePermissionMapper.insert(rp);
             }
         }
+        // Evict all menu cache since role permissions affect multiple users
+        authCache.evictAllMenus();
+
+        // Kick all users with this role offline
+        LambdaQueryWrapper<KhUserRole> userRoleQuery = new LambdaQueryWrapper<>();
+        userRoleQuery.eq(KhUserRole::getRoleId, roleId);
+        List<KhUserRole> userRoles = userRoleMapper.selectList(userRoleQuery);
+        for (KhUserRole ur : userRoles) {
+            KhUser user = userMapper.selectById(ur.getUserId());
+            if (user != null && user.getUsername() != null) {
+                authCache.remove(user.getUsername(), com.kh.boot.constant.UserType.ADMIN.getValue());
+            }
+        }
     }
 
     @Override
@@ -87,5 +117,10 @@ public class RoleServiceImpl extends ServiceImpl<RoleMapper, KhRole> implements 
         queryWrapper.eq(KhRolePermission::getRoleId, roleId);
         List<KhRolePermission> list = rolePermissionMapper.selectList(queryWrapper);
         return list.stream().map(KhRolePermission::getPermissionId).collect(Collectors.toList());
+    }
+
+    @Override
+    public List<KhRoleDTO> listAll() {
+        return roleConverter.toDtoList(list());
     }
 }

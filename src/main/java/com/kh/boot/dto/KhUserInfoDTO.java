@@ -1,5 +1,6 @@
 package com.kh.boot.dto;
 
+import com.kh.boot.vo.KhRouterVo;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
@@ -18,9 +19,15 @@ public class KhUserInfoDTO {
     @Schema(description = "Avatar URL", example = "https://example.com/avatar.png")
     private String avatar;
 
-    @Schema(description = "Role List", example = "[\"admin\"]")
+    @Schema(description = "Role List (Keys)", example = "[\"admin\"]")
     private List<String> roles;
+
+    @Schema(description = "Role Name List (Display)", example = "[\"管理员\"]")
+    private List<String> roleNames;
 
     @Schema(description = "Permission List", example = "[\"user:add\", \"user:edit\"]")
     private List<String> permissions;
+
+    @Schema(description = "Menu Tree for frontend routing")
+    private List<KhRouterVo> menus;
 }

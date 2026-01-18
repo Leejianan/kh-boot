@@ -30,12 +30,13 @@ public class EmailRecordServiceImpl extends ServiceImpl<EmailRecordMapper, KhEma
 
     @Override
     public IPage<KhEmailRecordDTO> page(EmailRecordQuery query) {
-        Page<KhEmailRecord> pageParam = new Page<>(query.getPage(), query.getSize());
+        Page<KhEmailRecord> page = new Page<>(query.getCurrent(), query.getSize());
         LambdaQueryWrapper<KhEmailRecord> wrapper = new LambdaQueryWrapper<>();
         wrapper.like(StringUtils.hasText(query.getSendTo()), KhEmailRecord::getSendTo, query.getSendTo());
         wrapper.eq(query.getSendResult() != null, KhEmailRecord::getSendResult, query.getSendResult());
         wrapper.orderByDesc(KhEmailRecord::getCreateTime);
-        IPage<KhEmailRecord> pageResult = this.page(pageParam, wrapper);
+
+        IPage<KhEmailRecord> pageResult = this.page(page, wrapper);
         return pageResult.convert(EmailRecordConverter.INSTANCE::toDto);
     }
 

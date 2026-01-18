@@ -32,7 +32,7 @@ public class DatabaseSerialNumberService implements SerialNumberService {
 
         if (sn == null) {
             sn = new KhSerialNumber();
-            sn.setId(UUID.randomUUID().toString());
+            sn.setId(UUID.randomUUID().toString().replace("-", ""));
             sn.setBusinessKey(businessKey);
             sn.setPrefix(defaultPrefix);
             sn.setCurrentValue(0L);
@@ -88,11 +88,47 @@ public class DatabaseSerialNumberService implements SerialNumberService {
     @Override
     @Transactional
     public void saveRule(KhSerialNumber serialNumber) {
-        if (serialNumber.getId() == null) {
-            serialNumber.setId(UUID.randomUUID().toString());
-            serialNumberMapper.insert(serialNumber);
+        // Check if rule already exists by ID or Business Key
+        KhSerialNumber existing = null;
+        if (serialNumber.getId() != null) {
+            existing = serialNumberMapper.selectById(serialNumber.getId());
         } else {
-            serialNumberMapper.updateById(serialNumber);
+            existing = serialNumberMapper.selectOne(new QueryWrapper<KhSerialNumber>()
+                    .eq("business_key", serialNumber.getBusinessKey()));
+        }
+
+        if (existing == null) {
+            if (serialNumber.getId() == null) {
+                serialNumber.setId(UUID.randomUUID().toString().replace("-", ""));
+            }
+            try {
+                serialNumberMapper.insert(serialNumber);
+            } catch (Exception e) {
+                // Concurrency or Logical Delete conflict: verify if it really exists now
+                KhSerialNumber retrySelect = serialNumberMapper.selectOne(new QueryWrapper<KhSerialNumber>()
+                        .eq("business_key", serialNumber.getBusinessKey()));
+                if (retrySelect != null) {
+                    // Found it after all (maybe race condition), perform update logic
+                    retrySelect.setRulePrefix(serialNumber.getRulePrefix());
+                    retrySelect.setRuleDateFormat(serialNumber.getRuleDateFormat());
+                    retrySelect.setRuleWidth(serialNumber.getRuleWidth());
+                    serialNumberMapper.updateById(retrySelect);
+                } else {
+                    // Still can't find it but insert failed? Likely a logical delete ghost record.
+                    // Just log warn and move on, fixing manual DB intervention might be needed for
+                    // logic delete rows.
+                    log.warn("Failed to insert rule for [{}], possibly exists but marked as deleted: {}",
+                            serialNumber.getBusinessKey(), e.getMessage());
+                }
+            }
+        } else {
+            // Update existing rule properties
+            existing.setRulePrefix(serialNumber.getRulePrefix());
+            existing.setRuleDateFormat(serialNumber.getRuleDateFormat());
+            existing.setRuleWidth(serialNumber.getRuleWidth());
+            // Make sure ID is set for update
+            serialNumber.setId(existing.getId());
+            serialNumberMapper.updateById(existing);
         }
     }
 

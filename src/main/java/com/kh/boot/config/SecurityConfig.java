@@ -183,6 +183,19 @@ public class SecurityConfig {
             onlineUser.setUsername(username);
             onlineUser.setUserType(userType);
             onlineUser.setToken(token);
+            onlineUser.setLoginTime(new java.util.Date());
+            onlineUser.setIp(com.kh.boot.util.IpUtils.getIpAddr(request));
+            
+            try {
+                eu.bitwalker.useragentutils.UserAgent userAgent = eu.bitwalker.useragentutils.UserAgent.parseUserAgentString(request.getHeader("User-Agent"));
+                onlineUser.setBrowser(userAgent.getBrowser().getName());
+                onlineUser.setOs(userAgent.getOperatingSystem().getName());
+            } catch (Exception e) {
+                // Ignore parsing errors
+                onlineUser.setBrowser("Unknown");
+                onlineUser.setOs("Unknown");
+            }
+            
             authCache.putOnlineUser(onlineUser);
 
             response.getWriter().write("{\"code\":200,\"msg\":\"Login success\",\"data\":\"" + token + "\"}");

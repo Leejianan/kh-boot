@@ -3,12 +3,16 @@ package com.kh.boot.controller;
 import com.kh.boot.common.PageData;
 import com.kh.boot.common.Result;
 import com.kh.boot.controller.base.BaseController;
+import com.kh.boot.dto.KhUserCreateDTO;
 import com.kh.boot.dto.KhUserDTO;
+import com.kh.boot.dto.KhUserResetPasswordDTO;
+import com.kh.boot.dto.KhUserUpdateDTO;
 import com.kh.boot.service.UserService;
 import com.kh.boot.query.UserQuery;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
@@ -48,7 +52,7 @@ public class UserController extends BaseController {
     @PostMapping
     @PreAuthorize("hasAuthority('system:user:add')")
     public Result<Void> create(
-            @RequestBody @org.springframework.validation.annotation.Validated com.kh.boot.dto.KhUserCreateDTO createDTO) {
+            @RequestBody @Validated KhUserCreateDTO createDTO) {
         userService.createUser(createDTO);
         return success(null);
     }
@@ -57,7 +61,7 @@ public class UserController extends BaseController {
     @PutMapping
     @PreAuthorize("hasAuthority('system:user:edit')")
     public Result<Void> update(
-            @RequestBody @org.springframework.validation.annotation.Validated com.kh.boot.dto.KhUserUpdateDTO updateDTO) {
+            @RequestBody @Validated KhUserUpdateDTO updateDTO) {
         userService.updateUser(updateDTO);
         return success(null);
     }
@@ -67,6 +71,15 @@ public class UserController extends BaseController {
     @PreAuthorize("hasAuthority('system:user:delete')")
     public Result<Void> delete(@PathVariable String id) {
         userService.deleteUser(id);
+        return success(null);
+    }
+
+    @Operation(summary = "Reset User Password")
+    @PutMapping("/password")
+    @PreAuthorize("hasAuthority('system:user:resetPwd')")
+    public Result<Void> resetPassword(
+            @RequestBody @Validated KhUserResetPasswordDTO resetPasswordDTO) {
+        userService.resetPassword(resetPasswordDTO);
         return success(null);
     }
 }
