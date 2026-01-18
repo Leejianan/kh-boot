@@ -11,11 +11,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
-
 @Tag(name = "Online User Management", description = "Monitor and manage online users")
 @RestController
-@RequestMapping("/online")
+@RequestMapping("/admin/system/online")
 public class OnlineUserController extends BaseController {
 
     @Autowired

@@ -7,4 +7,6 @@ import java.util.List;
 
 public interface PermissionService extends IService<KhPermission> {
     List<KhPermission> getPermissionTree();
+
+    List<KhPermission> getMenuTree();
 }

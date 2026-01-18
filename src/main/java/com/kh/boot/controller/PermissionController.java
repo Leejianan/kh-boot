@@ -31,6 +31,13 @@ public class PermissionController extends BaseController {
         return success(PermissionConverter.INSTANCE.toDtoList(tree));
     }
 
+    @Operation(summary = "Get Sidebar Menu Tree (Only directories and menus)")
+    @GetMapping("/menu-tree")
+    public Result<List<KhPermissionDTO>> menuTree() {
+        List<KhPermission> tree = permissionService.getMenuTree();
+        return success(PermissionConverter.INSTANCE.toDtoList(tree));
+    }
+
     @Operation(summary = "Add Permission")
     @PostMapping
     @PreAuthorize("hasAuthority('system:permission:add')")

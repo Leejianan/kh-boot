@@ -38,5 +38,8 @@ public class KhPermissionDTO extends KhBaseDTO {
     private Integer sort;
 
     @Schema(description = "Status")
-    private String status;
+    private Integer status;
+
+    @Schema(description = "Children List")
+    private java.util.List<KhPermissionDTO> children;
 }

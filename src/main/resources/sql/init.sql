@@ -116,15 +116,15 @@ INSERT IGNORE INTO `kh_user_role` (`id`, `user_id`, `role_id`) VALUES ('1', '1',
 
 -- Permissions demo
 INSERT IGNORE INTO `kh_permission` (`id`, `name`, `parent_id`, `permission_key`, `type`, `sort`) VALUES 
-('1', 'System Management', '0', 'system', 0, 1),
-('2', 'User Management', '1', 'system:user', 1, 1),
-('3', 'User List', '2', 'system:user:list', 2, 1),
-('4', 'Role Management', '1', 'system:role', 1, 2),
-('5', 'Role List', '4', 'system:role:list', 2, 1),
-('6', 'Permission Management', '1', 'system:permission', 1, 3),
-('7', 'Permission List', '6', 'system:permission:list', 2, 1),
-('8', 'Online User', '1', 'system:online', 1, 4),
-('9', 'Online List', '8', 'system:online:list', 2, 1);
+('1', '系统管理', '0', 'system', 0, 1),
+('2', '用户管理', '1', 'system:user', 1, 1),
+('3', '用户列表', '2', 'system:user:list', 2, 1),
+('4', '角色管理', '1', 'system:role', 1, 2),
+('5', '角色列表', '4', 'system:role:list', 2, 1),
+('6', '权限管理', '1', 'system:permission', 1, 3),
+('7', '权限列表', '6', 'system:permission:list', 2, 1),
+('8', '在线用户', '1', 'system:online', 1, 4),
+('9', '在线列表', '8', 'system:online:list', 2, 1);
 
 -- 7. Email Record Table
 CREATE TABLE IF NOT EXISTS `kh_email_record` (
