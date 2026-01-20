@@ -7,9 +7,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Service;
 
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-
 /**
  * Mock implementation of Email Service.
  * In a real application, you would integrate with an SMTP server or an Email
@@ -18,21 +15,27 @@ import java.util.concurrent.ConcurrentHashMap;
 @Slf4j
 @Service
 @Primary
-public class MockEmailService implements EmailService {
+public class EmailServiceImpl implements EmailService {
 
     @Autowired(required = false)
     private EmailUtils emailUtils;
 
-    // 模拟存储 (生产环境应当使用 Redis)
-    private final Map<String, String> codeStore = new ConcurrentHashMap<>();
+    @Autowired
+    private org.springframework.data.redis.core.StringRedisTemplate redisTemplate;
+
+    private static final String CAPTCHA_KEY_PREFIX = "captcha:email:";
+    private static final long CAPTCHA_EXPIRATION = 5; // minutes
 
     @Override
     public String sendCode(String email) {
         // 生成 4 位验证码
         String code = String.valueOf((int) ((Math.random() * 9 + 1) * 1000));
-        codeStore.put(email, code);
 
-        log.info("=========== MOCK 邮件发送器 ===========");
+        // Store in Redis with expiration
+        String key = CAPTCHA_KEY_PREFIX + email;
+        redisTemplate.opsForValue().set(key, code, java.time.Duration.ofMinutes(CAPTCHA_EXPIRATION));
+
+        log.info("=========== 邮件发送服务 ===========");
         log.info("收件人: {}", email);
         log.info("内容: 您的验证码是 {}", code);
         log.info("========================================");
@@ -52,11 +55,25 @@ public class MockEmailService implements EmailService {
 
     @Override
     public boolean verifyCode(String email, String code) {
-        String storedCode = codeStore.get(email);
+        if (email == null || code == null) {
+            return false;
+        }
+        String key = CAPTCHA_KEY_PREFIX + email;
+        String storedCode = redisTemplate.opsForValue().get(key);
+
         if (storedCode != null && storedCode.equals(code)) {
-            codeStore.remove(email);
+            redisTemplate.delete(key);
             return true;
         }
         return false;
+    }
+
+    @Override
+    public void sendEmail(String to, String subject, String content) {
+        if (emailUtils != null) {
+            emailUtils.sendHtmlEmail(to, subject, content);
+        } else {
+            log.warn("EmailUtils not configured, skipping email to {}", to);
+        }
     }
 }

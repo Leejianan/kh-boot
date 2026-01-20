@@ -17,32 +17,32 @@ import com.kh.boot.mapper.UserRoleMapper;
 import com.kh.boot.query.RoleQuery;
 import com.kh.boot.service.RoleService;
 import com.kh.boot.util.EntityUtils;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
+import com.kh.boot.cache.AuthCache;
+import com.kh.boot.constant.RoleCode;
+import com.kh.boot.constant.UserType;
+import com.kh.boot.security.domain.LoginUser;
+import com.kh.boot.service.UserService;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+
 import java.util.List;
 import java.util.stream.Collectors;
-import com.kh.boot.cache.AuthCache;
 
+@Slf4j
 @Service
+@RequiredArgsConstructor
 public class RoleServiceImpl extends ServiceImpl<RoleMapper, KhRole> implements RoleService {
 
-    @Autowired
-    private RolePermissionMapper rolePermissionMapper;
-
-    @Autowired
-    private RoleConverter roleConverter;
-
-    @Autowired
-    private AuthCache authCache;
-
-    @Autowired
-    private UserRoleMapper userRoleMapper;
-
-    @Autowired
-    private UserMapper userMapper;
+    private final RolePermissionMapper rolePermissionMapper;
+    private final RoleConverter roleConverter;
+    private final AuthCache authCache;
+    private final UserRoleMapper userRoleMapper;
+    private final UserMapper userMapper;
+    private final UserService userService;
 
     @Override
     public IPage<KhRoleDTO> getRolePage(RoleQuery query) {
@@ -60,6 +60,7 @@ public class RoleServiceImpl extends ServiceImpl<RoleMapper, KhRole> implements 
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public void addRole(KhRoleDTO roleDTO) {
         KhRole role = roleConverter.toEntity(roleDTO);
         EntityUtils.initInsert(role);
@@ -67,6 +68,7 @@ public class RoleServiceImpl extends ServiceImpl<RoleMapper, KhRole> implements 
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public void updateRole(KhRoleDTO roleDTO) {
         KhRole role = roleConverter.toEntity(roleDTO);
         EntityUtils.initUpdate(role);
@@ -74,6 +76,7 @@ public class RoleServiceImpl extends ServiceImpl<RoleMapper, KhRole> implements 
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public void deleteRole(String id) {
         baseMapper.deleteById(id);
         LambdaQueryWrapper<KhRolePermission> queryWrapper = new LambdaQueryWrapper<>();
@@ -83,32 +86,73 @@ public class RoleServiceImpl extends ServiceImpl<RoleMapper, KhRole> implements 
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void assignPermissions(String roleId, List<String> permissionIds) {
-        LambdaQueryWrapper<KhRolePermission> queryWrapper = new LambdaQueryWrapper<>();
-        queryWrapper.eq(KhRolePermission::getRoleId, roleId);
-        rolePermissionMapper.delete(queryWrapper);
+    public boolean assignPermissions(String roleId, List<String> permissionIds) {
+        // 1. Remove existing permissions
+        rolePermissionMapper.delete(new LambdaQueryWrapper<KhRolePermission>()
+                .eq(KhRolePermission::getRoleId, roleId));
 
+        // 2. Add new permissions
         if (permissionIds != null && !permissionIds.isEmpty()) {
-            for (String permId : permissionIds) {
+            List<String> distinctPermissionIds = permissionIds.stream()
+                    .distinct()
+                    .collect(Collectors.toList());
+
+            for (String permissionId : distinctPermissionIds) {
                 KhRolePermission rp = new KhRolePermission();
                 rp.setRoleId(roleId);
-                rp.setPermissionId(permId);
+                rp.setPermissionId(permissionId);
                 rolePermissionMapper.insert(rp);
             }
         }
-        // Evict all menu cache since role permissions affect multiple users
-        authCache.evictAllMenus();
 
-        // Kick all users with this role offline
-        LambdaQueryWrapper<KhUserRole> userRoleQuery = new LambdaQueryWrapper<>();
-        userRoleQuery.eq(KhUserRole::getRoleId, roleId);
-        List<KhUserRole> userRoles = userRoleMapper.selectList(userRoleQuery);
-        for (KhUserRole ur : userRoles) {
-            KhUser user = userMapper.selectById(ur.getUserId());
-            if (user != null && user.getUsername() != null) {
-                authCache.remove(user.getUsername(), com.kh.boot.constant.UserType.ADMIN.getValue());
+        // 3. Clear auth cache
+        // If updating super admin role, only clear menu cache, don't kick users
+        KhRole role = getById(roleId);
+        boolean isSuperAdmin = role != null && RoleCode.SUPER_ADMIN.equals(role.getRoleKey());
+
+        if (isSuperAdmin) {
+            authCache.evictAllMenus();
+
+            // Also update the cached LoginUser permission list so backend @PreAuthorize and
+            // /info works immediately
+            // Find all users with this role
+            List<KhUserRole> userRoles = userRoleMapper.selectList(new LambdaQueryWrapper<KhUserRole>()
+                    .eq(KhUserRole::getRoleId, roleId));
+
+            for (KhUserRole ur : userRoles) {
+                String userId = ur.getUserId();
+                KhUser user = userMapper.selectById(userId);
+                if (user != null) {
+                    // Fetch fresh permissions from DB
+                    List<String> permissions = userService.getPermissionsByUserId(userId);
+                    // Add generic ROLE_ADMIN permission as done in UserServiceImpl.loadUserByXxx
+                    permissions.add("ROLE_ADMIN");
+
+                    // Update Redis
+                    String userType = UserType.ADMIN.getValue();
+                    LoginUser loginUser = authCache.getUser(user.getUsername(), userType);
+                    if (loginUser != null) {
+                        loginUser.setPermissions(permissions);
+                        authCache.putUser(user.getUsername(), userType, loginUser);
+                    }
+                }
+            }
+        } else {
+            // For normal roles, kick users to force re-login and get new permissions
+            List<KhUserRole> userRoles = userRoleMapper.selectList(new LambdaQueryWrapper<KhUserRole>()
+                    .eq(KhUserRole::getRoleId, roleId));
+
+            for (KhUserRole ur : userRoles) {
+                String userId = ur.getUserId();
+                // Get username needed for cache key
+                KhUser user = userMapper.selectById(userId);
+                if (user != null && user.getUsername() != null) {
+                    authCache.remove(user.getUsername(), UserType.ADMIN.getValue());
+                }
             }
         }
+
+        return isSuperAdmin;
     }
 
     @Override

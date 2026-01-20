@@ -98,6 +98,8 @@ public class SecurityConfig {
                         .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/swagger-ui.html", "/doc.html",
                                 "/webjars/**", "/error", "/")
                         .permitAll()
+                        // WebSocket endpoint - needs to allow SockJS handshake
+                        .requestMatchers("/ws/**").permitAll()
                         .anyRequest().authenticated())
                 .exceptionHandling(exceptions -> exceptions
                         .authenticationEntryPoint(restAuthenticationEntryPoint)
@@ -185,9 +187,10 @@ public class SecurityConfig {
             onlineUser.setToken(token);
             onlineUser.setLoginTime(new java.util.Date());
             onlineUser.setIp(com.kh.boot.util.IpUtils.getIpAddr(request));
-            
+
             try {
-                eu.bitwalker.useragentutils.UserAgent userAgent = eu.bitwalker.useragentutils.UserAgent.parseUserAgentString(request.getHeader("User-Agent"));
+                eu.bitwalker.useragentutils.UserAgent userAgent = eu.bitwalker.useragentutils.UserAgent
+                        .parseUserAgentString(request.getHeader("User-Agent"));
                 onlineUser.setBrowser(userAgent.getBrowser().getName());
                 onlineUser.setOs(userAgent.getOperatingSystem().getName());
             } catch (Exception e) {
@@ -195,7 +198,7 @@ public class SecurityConfig {
                 onlineUser.setBrowser("Unknown");
                 onlineUser.setOs("Unknown");
             }
-            
+
             authCache.putOnlineUser(onlineUser);
 
             response.getWriter().write("{\"code\":200,\"msg\":\"Login success\",\"data\":\"" + token + "\"}");

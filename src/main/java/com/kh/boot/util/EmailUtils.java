@@ -1,27 +1,65 @@
 package com.kh.boot.util;
 
+import com.kh.boot.service.ConfigService;
 import jakarta.mail.internet.MimeMessage;
 import lombok.extern.slf4j.Slf4j;
 import com.kh.boot.service.EmailRecordService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.mail.javamail.JavaMailSenderImpl;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Component;
+
+import java.util.Properties;
 
 @Slf4j
 @Component
 public class EmailUtils {
 
-    @Autowired(required = false)
-    private JavaMailSender mailSender;
-
-    @Value("${spring.mail.username:}")
-    private String from;
+    @Autowired
+    private ConfigService configService;
 
     @Autowired
     private EmailRecordService emailRecordService;
+
+    /**
+     * Dynamically build JavaMailSender from DB config
+     */
+    private JavaMailSender getJavaMailSender() {
+        String host = configService.getValueByKey("sys.mail.host");
+        String port = configService.getValueByKey("sys.mail.port");
+        String username = configService.getValueByKey("sys.mail.username");
+        String password = configService.getValueByKey("sys.mail.password");
+        String protocol = configService.getValueByKey("sys.mail.protocol");
+
+        if (host == null || port == null || username == null || password == null) {
+            log.warn("Mail config missing in DB. details: host={}, port={}, user=***", host, port);
+            return null;
+        }
+
+        JavaMailSenderImpl mailSender = new JavaMailSenderImpl();
+        try {
+            mailSender.setHost(host);
+            mailSender.setPort(Integer.parseInt(port));
+            mailSender.setUsername(username);
+            mailSender.setPassword(password);
+            mailSender.setProtocol(protocol != null ? protocol : "smtp");
+            mailSender.setDefaultEncoding("UTF-8");
+
+            Properties props = mailSender.getJavaMailProperties();
+            props.put("mail.smtp.auth", "true");
+            props.put("mail.smtp.starttls.enable", "true");
+            props.put("mail.smtp.starttls.required", "true");
+            props.put("mail.smtp.ssl.enable", "true");
+            props.put("mail.smtp.socketFactory.class", "javax.net.ssl.SSLSocketFactory");
+        } catch (Exception e) {
+            log.error("Failed to create JavaMailSender: {}", e.getMessage());
+            return null;
+        }
+
+        return mailSender;
+    }
 
     /**
      * Send Simple Email
@@ -29,12 +67,17 @@ public class EmailUtils {
     public void sendSimpleEmail(String to, String subject, String content) {
         boolean success = false;
         String failReason = null;
+        JavaMailSender mailSender = getJavaMailSender();
+
         try {
             if (mailSender == null) {
                 log.warn("JavaMailSender is not configured. Email to {} skipped.", to);
                 failReason = "JavaMailSender not configured";
                 return;
             }
+
+            String from = configService.getValueByKey("sys.mail.username");
+
             SimpleMailMessage message = new SimpleMailMessage();
             if (from != null && !from.isEmpty()) {
                 message.setFrom(from);
@@ -62,12 +105,17 @@ public class EmailUtils {
     public void sendHtmlEmail(String to, String subject, String content) {
         boolean success = false;
         String failReason = null;
+        JavaMailSender mailSender = getJavaMailSender();
+
         try {
             if (mailSender == null) {
                 log.warn("JavaMailSender is not configured. Email to {} skipped.", to);
                 failReason = "JavaMailSender not configured";
                 return;
             }
+
+            String from = configService.getValueByKey("sys.mail.username");
+
             MimeMessage message = mailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(message, true);
             if (from != null && !from.isEmpty()) {

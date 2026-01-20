@@ -18,7 +18,13 @@ public interface RoleService extends IService<KhRole> {
 
     void deleteRole(String id);
 
-    void assignPermissions(String roleId, List<String> permissionIds);
+    /**
+     * Assign permissions to a role
+     * 
+     * @return true if it's super admin role (need frontend refresh), false
+     *         otherwise
+     */
+    boolean assignPermissions(String roleId, List<String> permissionIds);
 
     List<String> getRolePermissionIds(String roleId);
 

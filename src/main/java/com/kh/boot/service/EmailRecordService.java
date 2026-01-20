@@ -6,6 +6,8 @@ import com.kh.boot.dto.KhEmailRecordDTO;
 import com.kh.boot.entity.KhEmailRecord;
 import com.kh.boot.query.EmailRecordQuery;
 
+import java.util.List;
+
 /**
  * <p>
  * Email Sending Record Service Interface
@@ -34,4 +36,11 @@ public interface EmailRecordService extends IService<KhEmailRecord> {
      * @param failReason failure reason
      */
     void saveRecord(String to, String subject, String content, boolean result, String failReason);
+
+    /**
+     * Delete email records by IDs
+     *
+     * @param ids record IDs
+     */
+    void deleteEmailRecords(List<Long> ids);
 }

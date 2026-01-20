@@ -29,11 +29,35 @@ import org.springframework.web.bind.annotation.RestController;
 public class EmailRecordController extends BaseController {
 
     private final EmailRecordService emailRecordService;
+    private final com.kh.boot.service.EmailService emailService;
 
     @Operation(summary = "Get Email Record List", description = "Retrieve email records with pagination")
     @GetMapping("/list")
     @PreAuthorize("hasAuthority('system:email:list')")
     public Result<PageData<KhEmailRecordDTO>> list(EmailRecordQuery query) {
         return pageSuccess(emailRecordService.page(query));
+    }
+
+    @Operation(summary = "Delete Email Records", description = "Delete email records by IDs")
+    @org.springframework.web.bind.annotation.DeleteMapping("/{ids}")
+    @PreAuthorize("hasAuthority('system:email:remove')")
+    public Result<Boolean> remove(@org.springframework.web.bind.annotation.PathVariable java.util.List<Long> ids) {
+        emailRecordService.deleteEmailRecords(ids);
+        return success(true);
+    }
+
+    @Operation(summary = "Send Email", description = "Send email to specified recipient")
+    @org.springframework.web.bind.annotation.PostMapping("/send")
+    @PreAuthorize("hasAuthority('system:email:send')")
+    public Result<Boolean> send(@org.springframework.web.bind.annotation.RequestBody SendEmailRequest request) {
+        emailService.sendEmail(request.getTo(), request.getSubject(), request.getContent());
+        return success(true);
+    }
+
+    @lombok.Data
+    public static class SendEmailRequest {
+        private String to;
+        private String subject;
+        private String content;
     }
 }

@@ -13,6 +13,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @Tag(name = "Role Management")
 @RestController
@@ -57,8 +58,8 @@ public class RoleController extends BaseController {
     @PostMapping("/{id}/permissions")
     @PreAuthorize("hasAuthority('system:role:assign')")
     public Result<?> assignPermissions(@PathVariable String id, @RequestBody List<String> permissionIds) {
-        roleService.assignPermissions(id, permissionIds);
-        return success();
+        boolean needRefresh = roleService.assignPermissions(id, permissionIds);
+        return success(Map.of("needRefresh", needRefresh));
     }
 
     @Operation(summary = "Get Role Permission IDs")

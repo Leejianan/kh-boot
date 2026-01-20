@@ -55,4 +55,12 @@ public class EmailRecordServiceImpl extends ServiceImpl<EmailRecordMapper, KhEma
             log.error("Failed to save email record: {}", e.getMessage());
         }
     }
+
+    @Override
+    @org.springframework.transaction.annotation.Transactional(rollbackFor = Exception.class)
+    public void deleteEmailRecords(java.util.List<Long> ids) {
+        if (ids != null && !ids.isEmpty()) {
+            this.removeByIds(ids);
+        }
+    }
 }

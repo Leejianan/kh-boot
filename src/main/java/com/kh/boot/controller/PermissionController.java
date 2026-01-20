@@ -1,6 +1,6 @@
 package com.kh.boot.controller;
 
-import com.kh.boot.common.PageData;
+import com.kh.boot.cache.AuthCache;
 import com.kh.boot.common.Result;
 import com.kh.boot.controller.base.BaseController;
 import com.kh.boot.converter.PermissionConverter;
@@ -23,6 +23,9 @@ public class PermissionController extends BaseController {
     @Autowired
     private PermissionService permissionService;
 
+    @Autowired
+    private AuthCache authCache;
+
     @Operation(summary = "Get Permission Tree")
     @GetMapping("/tree")
     @PreAuthorize("hasAuthority('system:permission:list')")
@@ -43,7 +46,11 @@ public class PermissionController extends BaseController {
     @PreAuthorize("hasAuthority('system:permission:add')")
     public Result<Boolean> add(@RequestBody KhPermissionDTO dto) {
         KhPermission permission = PermissionConverter.INSTANCE.toEntity(dto);
-        return success(permissionService.save(permission));
+        boolean result = permissionService.save(permission);
+        if (result) {
+            authCache.evictAllMenus();
+        }
+        return success(result);
     }
 
     @Operation(summary = "Update Permission")
@@ -51,13 +58,21 @@ public class PermissionController extends BaseController {
     @PreAuthorize("hasAuthority('system:permission:edit')")
     public Result<Boolean> update(@RequestBody KhPermissionDTO dto) {
         KhPermission permission = PermissionConverter.INSTANCE.toEntity(dto);
-        return success(permissionService.updateById(permission));
+        boolean result = permissionService.updateById(permission);
+        if (result) {
+            authCache.evictAllMenus();
+        }
+        return success(result);
     }
 
     @Operation(summary = "Delete Permission")
     @DeleteMapping("/{id}")
     @PreAuthorize("hasAuthority('system:permission:delete')")
     public Result<Boolean> delete(@PathVariable String id) {
-        return success(permissionService.removeById(id));
+        boolean result = permissionService.removeById(id);
+        if (result) {
+            authCache.evictAllMenus();
+        }
+        return success(result);
     }
 }

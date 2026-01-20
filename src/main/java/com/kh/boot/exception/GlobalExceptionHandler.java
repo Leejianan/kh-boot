@@ -30,6 +30,12 @@ public class GlobalExceptionHandler {
         return Result.error(400, "Validation Error: " + msg);
     }
 
+    @ExceptionHandler(BusinessException.class)
+    public Result<Void> handleBusinessException(BusinessException e) {
+        log.warn("Business Error: {}", e.getMessage());
+        return Result.error(e.getCode(), e.getMessage());
+    }
+
     @ExceptionHandler(IllegalArgumentException.class)
     public Result<Void> handleIllegalArgumentException(IllegalArgumentException e) {
         log.error("Argument Error", e);

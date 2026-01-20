@@ -17,4 +17,13 @@ public interface EmailService {
      * @return true if valid
      */
     boolean verifyCode(String email, String code);
+
+    /**
+     * Send generic email
+     *
+     * @param to      recipient
+     * @param subject subject
+     * @param content content
+     */
+    void sendEmail(String to, String subject, String content);
 }
