@@ -16,6 +16,9 @@ public class KhUserInfoDTO {
     @Schema(description = "Username", example = "john_doe")
     private String username;
 
+    @Schema(description = "Real Name", example = "John Doe")
+    private String realName;
+
     @Schema(description = "Avatar URL", example = "https://example.com/avatar.png")
     private String avatar;
 

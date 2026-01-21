@@ -75,7 +75,7 @@ public class ChatMessageServiceImpl extends ServiceImpl<ChatMessageMapper, KhCha
                         friendId))
                 .or(sub -> sub.eq(KhChatMessage::getSenderId, friendId).eq(KhChatMessage::getReceiverId,
                         currentUserId)))
-                .orderByAsc(KhChatMessage::getCreateTime);
+                .orderByDesc(KhChatMessage::getCreateTime);
 
         return this.page(new Page<>(current, size), wrapper);
     }

@@ -46,6 +46,11 @@ public class LoginUser implements UserDetails {
     private String userCode;
 
     /**
+     * Real Name
+     */
+    private String realName;
+
+    /**
      * 邮箱
      */
     private String email;
@@ -124,6 +129,7 @@ public class LoginUser implements UserDetails {
             // needed for specific fields
             if (user instanceof KhUser khUser) {
                 this.userCode = khUser.getUserCode();
+                this.realName = khUser.getRealName();
                 this.email = khUser.getEmail();
                 this.phone = khUser.getPhone();
                 this.avatar = khUser.getAvatar();

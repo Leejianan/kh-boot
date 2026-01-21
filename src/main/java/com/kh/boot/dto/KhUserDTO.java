@@ -26,4 +26,7 @@ public class KhUserDTO extends KhBaseDTO {
 
     @Schema(description = "User's assigned role names")
     private List<String> roleNames;
+
+    @Schema(description = "Whether the user is already a friend")
+    private Boolean isFriend;
 }

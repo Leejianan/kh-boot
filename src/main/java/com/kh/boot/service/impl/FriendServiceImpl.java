@@ -31,6 +31,7 @@ import java.util.stream.Collectors;
 public class FriendServiceImpl extends ServiceImpl<FriendMapper, KhFriend> implements FriendService {
 
     private final UserService userService;
+    private final com.kh.boot.cache.AuthCache authCache;
 
     @Override
     public List<KhUserDTO> searchUser(String keyword) {
@@ -49,12 +50,22 @@ public class FriendServiceImpl extends ServiceImpl<FriendMapper, KhFriend> imple
 
         List<KhUser> users = userService.list(wrapper);
 
+        // 获取当前用户的所有好友ID，用于标记 isFriend
+        LambdaQueryWrapper<KhFriend> friendWrapper = new LambdaQueryWrapper<>();
+        friendWrapper.eq(KhFriend::getUserId, currentUserId)
+                .eq(KhFriend::getStatus, KhFriend.STATUS_ACCEPTED);
+        List<String> friendIds = this.list(friendWrapper).stream()
+                .map(KhFriend::getFriendId).collect(Collectors.toList());
+
         return users.stream().map(user -> {
             KhUserDTO dto = new KhUserDTO();
             dto.setId(user.getId());
             dto.setUsername(user.getUsername());
             dto.setEmail(user.getEmail());
             dto.setPhone(user.getPhone());
+            dto.setRealName(user.getRealName());
+            dto.setAvatar(user.getAvatar());
+            dto.setIsFriend(friendIds.contains(user.getId()));
             return dto;
         }).collect(Collectors.toList());
     }
@@ -227,6 +238,13 @@ public class FriendServiceImpl extends ServiceImpl<FriendMapper, KhFriend> imple
             dto.setFriendUsername(friendUser.getUsername());
             dto.setFriendEmail(friendUser.getEmail());
             dto.setFriendPhone(friendUser.getPhone());
+            dto.setFriendRealName(friendUser.getRealName());
+            dto.setFriendAvatar(friendUser.getAvatar());
+            // 检查在线状态 (支持多种用户类型)
+            boolean isOnline = authCache.containsUser(friendUser.getUsername(),
+                    com.kh.boot.constant.UserType.ADMIN.getValue()) ||
+                    authCache.containsUser(friendUser.getUsername(), com.kh.boot.constant.UserType.MEMBER.getValue());
+            dto.setIsOnline(isOnline);
         }
 
         return dto;
@@ -250,6 +268,13 @@ public class FriendServiceImpl extends ServiceImpl<FriendMapper, KhFriend> imple
             dto.setFriendUsername(requester.getUsername());
             dto.setFriendEmail(requester.getEmail());
             dto.setFriendPhone(requester.getPhone());
+            dto.setFriendRealName(requester.getRealName());
+            dto.setFriendAvatar(requester.getAvatar());
+            // 检查在线状态
+            boolean isOnline = authCache.containsUser(requester.getUsername(),
+                    com.kh.boot.constant.UserType.ADMIN.getValue()) ||
+                    authCache.containsUser(requester.getUsername(), com.kh.boot.constant.UserType.MEMBER.getValue());
+            dto.setIsOnline(isOnline);
         }
 
         return dto;

@@ -6,6 +6,7 @@ import com.kh.boot.dto.KhOnlineUserDTO;
 import com.kh.boot.vo.KhRouterVo;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.stereotype.Component;
@@ -30,6 +31,9 @@ public class CaffeineAuthCache implements AuthCache {
     private Cache<String, String> tokenCache;
     private Cache<String, KhOnlineUserDTO> onlineUserCache;
     private Cache<String, List<KhRouterVo>> menuCache;
+
+    @Autowired
+    private org.springframework.context.ApplicationEventPublisher eventPublisher;
 
     @PostConstruct
     public void init() {
@@ -98,16 +102,34 @@ public class CaffeineAuthCache implements AuthCache {
 
     @Override
     public void putOnlineUser(KhOnlineUserDTO onlineUser) {
-        onlineUserCache.put(getTypedKey(onlineUser.getUsername(), onlineUser.getUserType()), onlineUser);
+        String key = getTypedKey(onlineUser.getUsername(), onlineUser.getUserType());
+        KhOnlineUserDTO oldUser = onlineUserCache.getIfPresent(key);
+
+        if (oldUser != null && !oldUser.getToken().equals(onlineUser.getToken())) {
+            // Kick out the old session
+            eventPublisher.publishEvent(new com.kh.boot.event.KickOutEvent(this,
+                    oldUser.getUsername(), oldUser.getUserType(), oldUser.getToken(),
+                    "您的账号在另一地点登录，密码可能已泄露！如非本人操作，请立即修改密码。"));
+        }
+        onlineUserCache.put(key, onlineUser);
     }
 
     @Override
     public com.kh.boot.common.PageData<KhOnlineUserDTO> pageOnlineUsers(int current, int size) {
         List<KhOnlineUserDTO> allUsers = new ArrayList<>(onlineUserCache.asMap().values());
 
+        // Sort by loginTime descending (newest first) to match Redis ZREVRANGE behavior
+        allUsers.sort((a, b) -> {
+            if (a.getLoginTime() == null)
+                return 1;
+            if (b.getLoginTime() == null)
+                return -1;
+            return b.getLoginTime().compareTo(a.getLoginTime());
+        });
+
         int total = allUsers.size();
         int fromIndex = (current - 1) * size;
-        if (fromIndex >= total) {
+        if (fromIndex >= total || fromIndex < 0) {
             return new com.kh.boot.common.PageData<>((long) total, (long) current, (long) size, new ArrayList<>());
         }
         int toIndex = Math.min(fromIndex + size, total);

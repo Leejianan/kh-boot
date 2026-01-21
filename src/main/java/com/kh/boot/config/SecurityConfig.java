@@ -184,6 +184,7 @@ public class SecurityConfig {
             KhOnlineUserDTO onlineUser = new KhOnlineUserDTO();
             onlineUser.setUsername(username);
             onlineUser.setUserType(userType);
+            onlineUser.setRealName(loginUser.getRealName());
             onlineUser.setToken(token);
             onlineUser.setLoginTime(new java.util.Date());
             onlineUser.setIp(com.kh.boot.util.IpUtils.getIpAddr(request));

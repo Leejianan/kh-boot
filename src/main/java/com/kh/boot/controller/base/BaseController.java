@@ -5,12 +5,7 @@ import com.kh.boot.common.PageData;
 import com.kh.boot.common.Result;
 import com.kh.boot.security.domain.LoginUser;
 import com.kh.boot.util.SecurityUtils;
-import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.web.bind.annotation.RestController;
-
-import java.io.IOException;
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
 
 /**
  * Common Base Controller

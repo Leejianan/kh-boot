@@ -14,6 +14,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
+import org.springframework.context.ApplicationEventPublisher;
 
 /**
  * Redis-based implementation of AuthCache.
@@ -25,6 +26,7 @@ import java.util.stream.Collectors;
 public class RedisAuthCache implements AuthCache {
 
     private final RedisTemplate<String, Object> redisTemplate;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Value("${kh.cache.timeout:120}")
     private Integer timeout;
@@ -97,6 +99,18 @@ public class RedisAuthCache implements AuthCache {
     @Override
     public void putOnlineUser(KhOnlineUserDTO onlineUser) {
         String key = getTypedKey(KEY_ONLINE, onlineUser.getUsername(), onlineUser.getUserType());
+
+        // Check for existing session (duplicate login)
+        Object existingValue = redisTemplate.opsForValue().get(key);
+        if (existingValue instanceof KhOnlineUserDTO) {
+            KhOnlineUserDTO oldUser = (KhOnlineUserDTO) existingValue;
+            if (!oldUser.getToken().equals(onlineUser.getToken())) {
+                eventPublisher.publishEvent(new com.kh.boot.event.KickOutEvent(this,
+                        oldUser.getUsername(), oldUser.getUserType(), oldUser.getToken(),
+                        "您的账号在另一地点登录，密码可能已泄露！如非本人操作，请立即修改密码。"));
+            }
+        }
+
         redisTemplate.opsForValue().set(key, onlineUser, timeout, TimeUnit.MINUTES);
         // Add to ZSet with current timestamp as score
         redisTemplate.opsForZSet().add(KEY_ONLINE_IDS, onlineUser.getUserType() + ":" + onlineUser.getUsername(),

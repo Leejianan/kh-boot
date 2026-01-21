@@ -37,6 +37,15 @@ public class FriendDTO implements Serializable {
     @Schema(description = "状态: 0-待确认, 1-已同意, 2-已拒绝")
     private Integer status;
 
+    @Schema(description = "好友真实姓名")
+    private String friendRealName;
+
+    @Schema(description = "好友头像")
+    private String friendAvatar;
+
+    @Schema(description = "是否在线")
+    private Boolean isOnline;
+
     @Schema(description = "申请时间")
     private Date createTime;
 

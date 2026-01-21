@@ -106,6 +106,7 @@ public class AuthController {
         KhUserInfoDTO userInfoDTO = new KhUserInfoDTO();
         userInfoDTO.setId(loginUser.getUserId());
         userInfoDTO.setUsername(loginUser.getUsername());
+        userInfoDTO.setRealName(loginUser.getRealName());
         if (loginUser.getAvatar() == null) {
             userInfoDTO.setAvatar("https://wpimg.wallstcn.com/f778738c-e4f8-4870-b634-56703b4acafe.gif");
         } else {

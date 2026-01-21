@@ -5,6 +5,7 @@ import com.kh.boot.common.Result;
 import com.kh.boot.controller.base.BaseController;
 import com.kh.boot.dto.KhOnlineUserDTO;
 import com.kh.boot.cache.AuthCache;
+import com.kh.boot.service.NotificationService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,6 +20,9 @@ public class OnlineUserController extends BaseController {
     @Autowired
     private AuthCache authCache;
 
+    @Autowired
+    private NotificationService notificationService;
+
     @Operation(summary = "List Online Users", description = "Get details of currently logged-in users with pagination")
     @GetMapping("/list")
     @PreAuthorize("hasAuthority('system:online:list')")
@@ -30,6 +34,7 @@ public class OnlineUserController extends BaseController {
     @DeleteMapping("/{username}")
     @PreAuthorize("hasAuthority('system:online:logout')")
     public Result<Void> logout(@PathVariable String username, @RequestParam String userType) {
+        notificationService.sendKickOut(username, userType, null, "您的账号已被管理员强制下线。");
         authCache.remove(username, userType);
         return success();
     }

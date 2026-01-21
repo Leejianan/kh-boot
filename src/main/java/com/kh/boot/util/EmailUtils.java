@@ -77,10 +77,15 @@ public class EmailUtils {
             }
 
             String from = configService.getValueByKey("sys.mail.username");
+            String fromName = configService.getValueByKey("sys.mail.fromName");
 
             SimpleMailMessage message = new SimpleMailMessage();
             if (from != null && !from.isEmpty()) {
-                message.setFrom(from);
+                if (fromName != null && !fromName.isEmpty()) {
+                    message.setFrom(String.format("%s <%s>", fromName, from));
+                } else {
+                    message.setFrom(from);
+                }
             }
             message.setTo(to);
             message.setSubject(subject);
@@ -115,11 +120,16 @@ public class EmailUtils {
             }
 
             String from = configService.getValueByKey("sys.mail.username");
+            String fromName = configService.getValueByKey("sys.mail.fromName");
 
             MimeMessage message = mailSender.createMimeMessage();
-            MimeMessageHelper helper = new MimeMessageHelper(message, true);
+            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
             if (from != null && !from.isEmpty()) {
-                helper.setFrom(from);
+                if (fromName != null && !fromName.isEmpty()) {
+                    helper.setFrom(from, fromName);
+                } else {
+                    helper.setFrom(from);
+                }
             }
             helper.setTo(to);
             helper.setSubject(subject);

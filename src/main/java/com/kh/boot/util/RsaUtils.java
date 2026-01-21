@@ -25,8 +25,8 @@ public class RsaUtils {
         KeyFactory keyFactory = KeyFactory.getInstance("RSA");
         PrivateKey privateKey = keyFactory.generatePrivate(keySpec);
 
-        // Use RSA-OAEP with SHA-1 to match Web Crypto API
-        Cipher cipher = Cipher.getInstance("RSA/ECB/OAEPWithSHA-1AndMGF1Padding");
+        // Use standard PKCS#1 v1.5 padding to match JSEncrypt and common RSA usage
+        Cipher cipher = Cipher.getInstance("RSA/ECB/PKCS1Padding");
         cipher.init(Cipher.DECRYPT_MODE, privateKey);
 
         byte[] encryptedBytes = Base64.getDecoder().decode(encryptedData);

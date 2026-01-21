@@ -18,6 +18,9 @@ public class KhOnlineUserDTO implements Serializable {
     @Schema(description = "User Type (admin/member)")
     private String userType;
 
+    @Schema(description = "Real Name")
+    private String realName;
+
     @Schema(description = "Client IP Address")
     private String ip;
 
