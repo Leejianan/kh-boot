@@ -48,6 +48,14 @@ import org.springframework.security.config.Customizer;
 @EnableMethodSecurity
 public class SecurityConfig {
 
+    // Enable SecurityContext propagation in async threads (needed for SSE,
+    // CompletableFuture, etc.)
+    static {
+        org.springframework.security.core.context.SecurityContextHolder
+                .setStrategyName(
+                        org.springframework.security.core.context.SecurityContextHolder.MODE_INHERITABLETHREADLOCAL);
+    }
+
     @Autowired
     private JwtAuthenticationTokenFilter jwtAuthenticationTokenFilter;
 
@@ -89,6 +97,8 @@ public class SecurityConfig {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .securityMatcher("/**") // Explicitly state this is the default/fallback
                 .authorizeHttpRequests(auth -> auth
+                        // Skip security checks for async dispatches (SSE, etc.)
+                        .dispatcherTypeMatchers(jakarta.servlet.DispatcherType.ASYNC).permitAll()
                         .requestMatchers(HttpMethod.POST, "/admin/auth/login",
 
                                 "/admin/auth/sms/code", "/admin/auth/login/sms", "/admin/auth/email/code",
@@ -96,11 +106,12 @@ public class SecurityConfig {
                         .permitAll()
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/swagger-ui.html", "/doc.html",
-                                "/webjars/**", "/error", "/")
+                                "/webjars/**", "/error", "/", "/admin/video/stream/**")
                         .permitAll()
                         // WebSocket endpoint - needs to allow SockJS handshake
                         .requestMatchers("/ws/**").permitAll()
                         .anyRequest().authenticated())
+
                 .exceptionHandling(exceptions -> exceptions
                         .authenticationEntryPoint(restAuthenticationEntryPoint)
                         .accessDeniedHandler(restAccessDeniedHandler));
@@ -231,6 +242,9 @@ public class SecurityConfig {
         return filter;
     }
 
+    @Value("${kh.security.login.allow-plaintext-password}")
+    private boolean allowPlaintextPassword;
+
     @Bean
     public JsonUsernamePasswordAuthenticationFilter jsonUsernamePasswordAuthenticationFilter(
             AuthenticationManager authenticationManager) {
@@ -240,6 +254,7 @@ public class SecurityConfig {
         filter.setAuthenticationSuccessHandler(authenticationSuccessHandler());
         filter.setAuthenticationFailureHandler(authenticationFailureHandler());
         filter.setPrivateKey(privateKey);
+        filter.setAllowPlaintextPassword(allowPlaintextPassword);
         return filter;
     }
 
