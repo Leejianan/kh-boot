@@ -119,6 +119,11 @@ public class RedisAuthCache implements AuthCache {
 
     @Override
     public com.kh.boot.common.PageData<KhOnlineUserDTO> pageOnlineUsers(int current, int size) {
+        // First, handle potential stale entries in ZSet by cleaning up items with score
+        // older than timeout
+        long threshold = System.currentTimeMillis() - (long) timeout * 60 * 1000;
+        redisTemplate.opsForZSet().removeRangeByScore(KEY_ONLINE_IDS, 0, (double) threshold);
+
         long total = redisTemplate.opsForZSet().zCard(KEY_ONLINE_IDS);
         if (total == 0) {
             return new com.kh.boot.common.PageData<>(0L, (long) current, (long) size, new ArrayList<>());
@@ -134,29 +139,29 @@ public class RedisAuthCache implements AuthCache {
         }
 
         List<String> keys = members.stream()
-                .map(obj -> {
-                    String member = (String) obj;
-                    // member format: userType:username
-                    // key format: auth:online:userType:username
-                    // Need to split to reconstruct key correctly using logic of getTypedKey logic?
-                    // Actually getTypedKey("auth:online:", username, userType) -> "auth:online:" +
-                    // userType + ":" + username
-                    // So just prepending "auth:online:" to member string works if member is
-                    // userType:username
-                    return KEY_ONLINE + member;
-                })
+                .map(obj -> KEY_ONLINE + (String) obj)
                 .collect(Collectors.toList());
 
         List<Object> values = redisTemplate.opsForValue().multiGet(keys);
         List<KhOnlineUserDTO> records = new ArrayList<>();
+        List<String> membersList = members.stream().map(Object::toString).collect(Collectors.toList());
+
         if (values != null) {
-            for (Object v : values) {
+            for (int i = 0; i < values.size(); i++) {
+                Object v = values.get(i);
                 if (v instanceof KhOnlineUserDTO) {
                     records.add((KhOnlineUserDTO) v);
+                } else {
+                    // This entry exists in ZSet but its value has expired, remove it from ZSet
+                    redisTemplate.opsForZSet().remove(KEY_ONLINE_IDS, membersList.get(i));
                 }
             }
         }
 
+        // If we removed some stale entries during this page fetch, total might have
+        // changed.
+        // For simplicity, we return the total we got at the start of the method.
+        // On next page refresh, the count will be correct.
         return new com.kh.boot.common.PageData<>(total, (long) current, (long) size, records);
     }
 

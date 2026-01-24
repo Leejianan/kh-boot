@@ -26,6 +26,7 @@ public class EmailUtils {
     /**
      * Dynamically build JavaMailSender from DB config
      */
+    //dfdfd
     private JavaMailSender getJavaMailSender() {
         String host = configService.getValueByKey("sys.mail.host");
         String port = configService.getValueByKey("sys.mail.port");

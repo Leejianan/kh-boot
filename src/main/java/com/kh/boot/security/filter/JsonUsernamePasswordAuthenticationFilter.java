@@ -30,9 +30,14 @@ public class JsonUsernamePasswordAuthenticationFilter extends AbstractAuthentica
     }
 
     private String privateKey;
+    private boolean allowPlaintextPassword = true;
 
     public void setPrivateKey(String privateKey) {
         this.privateKey = privateKey;
+    }
+
+    public void setAllowPlaintextPassword(boolean allowPlaintextPassword) {
+        this.allowPlaintextPassword = allowPlaintextPassword;
     }
 
     @Override
@@ -63,9 +68,17 @@ public class JsonUsernamePasswordAuthenticationFilter extends AbstractAuthentica
                     // Assuming RsaUtils is available in com.kh.boot.util
                     password = com.kh.boot.util.RsaUtils.decrypt(password, privateKey);
                 } catch (Exception e) {
+                    if (!allowPlaintextPassword) {
+                        throw new AuthenticationServiceException(
+                                "Plaintext password login is disallowed in this environment.");
+                    }
                     // Ignore decryption error, use as is (might be plaintext or invalid)
                     // throw new AuthenticationServiceException("Invalid encrypted password");
                 }
+            } else if (!allowPlaintextPassword) {
+                // If no key is configured BUT plaintext is disallowed, this is an invalid
+                // configuration for this environment
+                throw new AuthenticationServiceException("Authentication configuration error: Cryptography required.");
             }
 
             username = username.trim();

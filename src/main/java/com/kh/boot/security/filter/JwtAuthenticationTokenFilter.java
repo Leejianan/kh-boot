@@ -40,8 +40,8 @@ public class JwtAuthenticationTokenFilter extends OncePerRequestFilter {
             try {
                 username = jwtUtil.extractUsername(token);
             } catch (Exception e) {
-                // Token invalid
-                logger.error("Token invalid or expired: " + e.getMessage());
+                // Token invalid - log as warn instead of error to reduce spam
+                logger.warn("Token invalid or expired: " + e.getMessage());
             }
         }
 
