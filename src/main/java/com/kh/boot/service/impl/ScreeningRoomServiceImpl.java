@@ -66,6 +66,11 @@ public class ScreeningRoomServiceImpl extends ServiceImpl<FireScreeningRoomMappe
     public FireScreeningRoom createRoom(String name, String password) {
         String userId = SecurityUtils.getUserId();
         String username = SecurityUtils.getUsername();
+        
+        // 验证权限
+        if (!SecurityUtils.hasAuthority("screening:room:create")) {
+            throw new BusinessException("没有创建放映室的权限");
+        }
 
         FireScreeningRoom room = new FireScreeningRoom();
         room.setName(name);
@@ -91,6 +96,11 @@ public class ScreeningRoomServiceImpl extends ServiceImpl<FireScreeningRoomMappe
     @Transactional(rollbackFor = Exception.class)
     public void joinRoom(String roomId, String password) {
         String userId = SecurityUtils.getUserId();
+        
+        // 验证权限
+        if (!SecurityUtils.hasAuthority("screening:room:join")) {
+            throw new BusinessException("没有加入放映室的权限");
+        }
 
         FireScreeningRoom room = this.getById(roomId);
         if (room == null) {
@@ -151,16 +161,27 @@ public class ScreeningRoomServiceImpl extends ServiceImpl<FireScreeningRoomMappe
     @Transactional(rollbackFor = Exception.class)
     public void leaveRoom(String roomId) {
         String userId = SecurityUtils.getUserId();
+        String username = SecurityUtils.getUsername();
+
+        // 检查是否是房主
+        FireScreeningRoom room = this.getById(roomId);
+        boolean isOwner = room != null && room.getOwnerId().equals(userId);
 
         LambdaQueryWrapper<FireRoomMember> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(FireRoomMember::getRoomId, roomId)
                 .eq(FireRoomMember::getUserId, userId);
         roomMemberMapper.delete(wrapper);
 
-        // 通知房间内其他成员
-        notifyRoomMembers(roomId, "member_leave", SecurityUtils.getUsername() + " 离开了放映室");
+        // 通知房间内其他成员（包含 isOwner 信息）
+        messagingTemplate.convertAndSend("/topic/room/" + roomId,
+                java.util.Map.of(
+                        "type", "member_leave",
+                        "username", username,
+                        "isOwner", isOwner,
+                        "message", username + " 离开了放映室",
+                        "timestamp", System.currentTimeMillis()));
 
-        log.info("User {} left room: {}", SecurityUtils.getUsername(), roomId);
+        log.info("User {} left room: {} (isOwner: {})", username, roomId, isOwner);
     }
 
     @Override
@@ -324,16 +345,20 @@ public class ScreeningRoomServiceImpl extends ServiceImpl<FireScreeningRoomMappe
         if (owner != null) {
             dto.setOwnerName(owner.getRealName() != null ? owner.getRealName() : owner.getUsername());
             dto.setOwnerAvatar(owner.getAvatar());
+            dto.setOwnerUsername(owner.getUsername());
         }
 
         // 获取当前视频信息
-        log.debug("convertToDTO: Checking currentVideoId for room {}. CurrentVideoId: {}", room.getId(), room.getCurrentVideoId());
+        log.debug("convertToDTO: Checking currentVideoId for room {}. CurrentVideoId: {}", room.getId(),
+                room.getCurrentVideoId());
         if (StringUtils.hasText(room.getCurrentVideoId())) {
             FireVideo video = videoMapper.selectById(room.getCurrentVideoId());
             if (video == null) {
-                log.warn("convertToDTO: Video not found for currentVideoId {} in room {}", room.getCurrentVideoId(), room.getId());
+                log.warn("convertToDTO: Video not found for currentVideoId {} in room {}", room.getCurrentVideoId(),
+                        room.getId());
             } else {
-                log.debug("convertToDTO: Found video {} for currentVideoId {} in room {}", video.getTitle(), room.getCurrentVideoId(), room.getId());
+                log.debug("convertToDTO: Found video {} for currentVideoId {} in room {}", video.getTitle(),
+                        room.getCurrentVideoId(), room.getId());
                 dto.setCurrentVideoTitle(video.getTitle());
                 // 返回视频流 URL 而非本地文件路径
                 dto.setCurrentVideoUrl("/admin/video/stream/" + video.getId());

@@ -2,6 +2,8 @@ package com.kh.boot.exception;
 
 import com.kh.boot.common.Result;
 import lombok.extern.slf4j.Slf4j;
+
+import org.apache.catalina.connector.ClientAbortException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -57,5 +59,11 @@ public class GlobalExceptionHandler {
         log.error("System Error", e);
         return buildResponse(500, "Server Error: " + (e.getMessage() != null ? e.getMessage() : "Internal Error"),
                 HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+
+    @ExceptionHandler(ClientAbortException.class)
+    public void handleClientAbortException(ClientAbortException e) {
+        // 这是一个常见的客户端断开连接异常，不需要打印堆栈，甚至可以忽略
+        log.warn("客户端中断了连接: {}", e.getMessage());
     }
 }

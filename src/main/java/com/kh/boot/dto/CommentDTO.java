@@ -31,6 +31,9 @@ public class CommentDTO {
     @Schema(description = "评论者名称")
     private String username;
 
+    @Schema(description = "评论者真实姓名")
+    private String realName;
+
     @Schema(description = "评论者头像")
     private String avatar;
 

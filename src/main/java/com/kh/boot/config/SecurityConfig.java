@@ -95,6 +95,9 @@ public class SecurityConfig {
 
         http
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .headers(headers -> headers.frameOptions(frameOptions -> frameOptions.disable())) // Disable
+                                                                                                  // X-Frame-Options for
+                                                                                                  // SockJS
                 .securityMatcher("/**") // Explicitly state this is the default/fallback
                 .authorizeHttpRequests(auth -> auth
                         // Skip security checks for async dispatches (SSE, etc.)

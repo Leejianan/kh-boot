@@ -14,6 +14,7 @@ import com.kh.boot.service.UserService;
 import com.kh.boot.util.SecurityUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -34,6 +35,7 @@ public class CommentServiceImpl extends ServiceImpl<FireCommentMapper, FireComme
         implements CommentService {
 
     private final UserService userService;
+    private final SimpMessagingTemplate messagingTemplate;
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -53,7 +55,15 @@ public class CommentServiceImpl extends ServiceImpl<FireCommentMapper, FireComme
 
         this.save(comment);
 
-        return convertToDTO(comment);
+        CommentDTO dto = convertToDTO(comment);
+        
+        // 通过 WebSocket 广播新评论到房间内的所有成员
+        if (roomId != null) {
+            messagingTemplate.convertAndSend("/topic/room/" + roomId + "/comment", dto);
+            log.info("Broadcasted new comment to room {}: {}", roomId, content);
+        }
+
+        return dto;
     }
 
     @Override
@@ -120,6 +130,7 @@ public class CommentServiceImpl extends ServiceImpl<FireCommentMapper, FireComme
         KhUser user = userService.getById(comment.getUserId());
         if (user != null) {
             dto.setUsername(user.getUsername());
+            dto.setRealName(user.getRealName());
             dto.setAvatar(user.getAvatar());
         }
 

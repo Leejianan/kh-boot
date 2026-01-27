@@ -25,6 +25,9 @@ public class ScreeningRoomDTO {
     @Schema(description = "房主ID")
     private String ownerId;
 
+    @Schema(description = "房主用户名")
+    private String ownerUsername;
+
     @Schema(description = "房主名称")
     private String ownerName;
 
