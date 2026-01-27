@@ -66,11 +66,6 @@ public class ScreeningRoomServiceImpl extends ServiceImpl<FireScreeningRoomMappe
     public FireScreeningRoom createRoom(String name, String password) {
         String userId = SecurityUtils.getUserId();
         String username = SecurityUtils.getUsername();
-        
-        // 验证权限
-        if (!SecurityUtils.hasAuthority("screening:room:create")) {
-            throw new BusinessException("没有创建放映室的权限");
-        }
 
         FireScreeningRoom room = new FireScreeningRoom();
         room.setName(name);
@@ -96,11 +91,6 @@ public class ScreeningRoomServiceImpl extends ServiceImpl<FireScreeningRoomMappe
     @Transactional(rollbackFor = Exception.class)
     public void joinRoom(String roomId, String password) {
         String userId = SecurityUtils.getUserId();
-        
-        // 验证权限
-        if (!SecurityUtils.hasAuthority("screening:room:join")) {
-            throw new BusinessException("没有加入放映室的权限");
-        }
 
         FireScreeningRoom room = this.getById(roomId);
         if (room == null) {
