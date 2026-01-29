@@ -92,6 +92,29 @@ public class RoomWebSocketController {
             return;
         }
 
+        String userId = null;
+        String username = principal.getName();
+
+        // 尝试获取完整的用户信息
+        if (principal instanceof UsernamePasswordAuthenticationToken) {
+            UsernamePasswordAuthenticationToken auth = (UsernamePasswordAuthenticationToken) principal;
+            if (auth.getPrincipal() instanceof com.kh.boot.security.domain.LoginUser) {
+                com.kh.boot.security.domain.LoginUser loginUser = (com.kh.boot.security.domain.LoginUser) auth
+                        .getPrincipal();
+                userId = loginUser.getUserId();
+                username = loginUser.getUsername();
+            }
+        }
+
+        if (userId == null) {
+            log.warn("Could not extract userId from principal for danmaku");
+            // 尝试通过 username 从数据库查找? 或者直接因为 DB 约束而失败。
+            // 这里我们无法修复缺少 userId 的情况，只能让其报错或提前返回。
+            // 为了避免 DataIntegrityViolationException，我们应该检查 userId
+            log.error("Sending danmaku failed: userId is null");
+            return;
+        }
+
         String roomId = (String) payload.get("roomId");
         String videoId = (String) payload.get("videoId");
         String content = (String) payload.get("content");
@@ -100,10 +123,10 @@ public class RoomWebSocketController {
         String color = (String) payload.get("color");
         String position = (String) payload.get("position");
 
-        log.info("Danmaku from {}: room={}, content={}", principal.getName(), roomId, content);
+        log.info("Danmaku from {}({}): room={}, content={}", username, userId, roomId, content);
 
         // 保存弹幕并广播（sendDanmaku 内部会广播）
-        danmakuService.sendDanmaku(roomId, videoId, content, videoTime, color, position);
+        danmakuService.sendDanmaku(userId, username, roomId, videoId, content, videoTime, color, position);
     }
 
     /**
@@ -113,11 +136,11 @@ public class RoomWebSocketController {
     @MessageMapping("/room.join")
     public void joinRoom(@Payload Map<String, Object> payload, SimpMessageHeaderAccessor headerAccessor) {
         Principal principal = headerAccessor.getUser();
-        log.info("joinRoom called: sessionId={}, principal={}, payload={}", 
-                headerAccessor.getSessionId(), 
+        log.info("joinRoom called: sessionId={}, principal={}, payload={}",
+                headerAccessor.getSessionId(),
                 principal != null ? principal.getName() : "NULL",
                 payload);
-        
+
         if (principal == null) {
             log.warn("joinRoom: No principal found in header accessor, sessionId={}", headerAccessor.getSessionId());
             return;
@@ -127,9 +150,17 @@ public class RoomWebSocketController {
         String username = principal.getName();
         log.info("=== User {} joining room {} via WebSocket ===", username, roomId);
 
+        // 确保将用户添加到房间成员列表（如果不在）
+        try {
+            roomService.joinRoom(roomId);
+        } catch (Exception e) {
+            log.warn("Failed to join room in DB: {}", e.getMessage());
+            // 继续执行，因为可能是重复加入或者其他非致命错误，不应该阻断 WebSocket 流程
+        }
+
         // 获取房间最新状态并发送给新加入的用户
         ScreeningRoomDTO roomDetail = roomService.getRoomDetail(roomId);
-        log.info("Room detail fetched: videoId={}, isPlaying={}, currentTime={}", 
+        log.info("Room detail fetched: videoId={}, isPlaying={}, currentTime={}",
                 roomDetail.getCurrentVideoId(), roomDetail.getIsPlaying(), roomDetail.getCurrentTime());
 
         // 发送给刚加入的用户当前播放状态（包含完整的同步信息）
@@ -155,29 +186,26 @@ public class RoomWebSocketController {
                         "videoUrl", roomDetail.getCurrentVideoUrl() != null ? roomDetail.getCurrentVideoUrl() : "",
                         "sender", "system",
                         "timestamp", System.currentTimeMillis());
-                
+
                 log.info("Sync message content: {}", syncMessage);
                 messagingTemplate.convertAndSendToUser(
                         username,
                         "/queue/room/sync",
                         syncMessage);
 
-                log.info("Sent delayed sync state to new user {}: isPlaying={}, currentTime={}", 
-                        username, 
-                        roomDetail.getIsPlaying(), 
+                log.info("Sent delayed sync state to new user {}: isPlaying={}, currentTime={}",
+                        username,
+                        roomDetail.getIsPlaying(),
                         roomDetail.getCurrentTime());
             } catch (Exception e) {
                 log.error("Failed to send delayed sync message to user {}", username, e);
             }
         }, Instant.now().plusMillis(500));
 
-        // 广播给房间内其他成员
-        messagingTemplate.convertAndSend("/topic/room/" + roomId,
-                Map.of(
-                        "type", "member_join",
-                        "username", username,
-                        "memberCount", roomDetail.getMemberCount(),
-                        "timestamp", System.currentTimeMillis()));
+        // 广播给房间内其他成员 - 已在 roomService.joinRoom 中处理
+        // roomService.joinRoom 内部已调用 notifyRoomMembers 广播 member_join
+        // 所以这里不需要再发一次，避免重复通知
+
         log.info("Broadcasted member_join event to room {}", roomId);
     }
 
@@ -200,7 +228,7 @@ public class RoomWebSocketController {
         try {
             ScreeningRoomDTO roomDetail = roomService.getRoomDetail(roomId);
             boolean isOwner = username.equals(roomDetail.getOwnerUsername());
-            
+
             // 广播给房间内其他成员
             messagingTemplate.convertAndSend("/topic/room/" + roomId,
                     Map.of(
@@ -209,7 +237,7 @@ public class RoomWebSocketController {
                             "isOwner", isOwner,
                             "message", isOwner ? "房主已离开，播放已暂停" : username + " 离开了放映室",
                             "timestamp", System.currentTimeMillis()));
-            
+
             if (isOwner) {
                 log.info("Owner {} left room {}, notifying other members", username, roomId);
             }

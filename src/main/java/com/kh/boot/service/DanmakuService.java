@@ -17,6 +17,8 @@ public interface DanmakuService extends IService<FireDanmaku> {
     /**
      * 发送弹幕
      *
+     * @param userId    用户ID
+     * @param username  用户名
      * @param roomId    放映室ID
      * @param videoId   视频ID
      * @param content   内容
@@ -25,7 +27,8 @@ public interface DanmakuService extends IService<FireDanmaku> {
      * @param position  位置
      * @return 弹幕信息
      */
-    DanmakuDTO sendDanmaku(String roomId, String videoId, String content, int videoTime, String color, String position);
+    DanmakuDTO sendDanmaku(String userId, String username, String roomId, String videoId, String content, int videoTime,
+            String color, String position);
 
     /**
      * 获取视频弹幕列表

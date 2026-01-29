@@ -6,6 +6,7 @@ import com.kh.boot.dto.CommentDTO;
 import com.kh.boot.dto.DanmakuDTO;
 import com.kh.boot.service.CommentService;
 import com.kh.boot.service.DanmakuService;
+import com.kh.boot.util.SecurityUtils;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
@@ -58,8 +59,11 @@ public class DanmakuCommentController {
         String color = (String) body.get("color");
         String position = (String) body.get("position");
 
+        String userId = SecurityUtils.getUserId();
+        String username = SecurityUtils.getUsername();
+
         return Result.success(danmakuService.sendDanmaku(
-                roomId, videoId, content, videoTime != null ? videoTime : 0, color, position));
+                userId, username, roomId, videoId, content, videoTime != null ? videoTime : 0, color, position));
     }
 
     // ========== 评论接口 ==========
@@ -71,6 +75,15 @@ public class DanmakuCommentController {
             @RequestParam(defaultValue = "1") int current,
             @RequestParam(defaultValue = "20") int size) {
         return Result.success(commentService.getCommentList(videoId, current, size));
+    }
+
+    @GetMapping("/room/comment/{roomId}")
+    @Operation(summary = "获取房间评论", description = "分页获取房间评论")
+    public Result<IPage<CommentDTO>> getRoomComments(
+            @PathVariable String roomId,
+            @RequestParam(defaultValue = "1") int current,
+            @RequestParam(defaultValue = "20") int size) {
+        return Result.success(commentService.getCommentListByRoom(roomId, current, size));
     }
 
     @PostMapping("/comment")

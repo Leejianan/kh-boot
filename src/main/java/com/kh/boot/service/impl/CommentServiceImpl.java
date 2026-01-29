@@ -56,7 +56,7 @@ public class CommentServiceImpl extends ServiceImpl<FireCommentMapper, FireComme
         this.save(comment);
 
         CommentDTO dto = convertToDTO(comment);
-        
+
         // 通过 WebSocket 广播新评论到房间内的所有成员
         if (roomId != null) {
             messagingTemplate.convertAndSend("/topic/room/" + roomId + "/comment", dto);
@@ -70,6 +70,23 @@ public class CommentServiceImpl extends ServiceImpl<FireCommentMapper, FireComme
     public IPage<CommentDTO> getCommentList(String videoId, int current, int size) {
         LambdaQueryWrapper<FireComment> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(FireComment::getVideoId, videoId)
+                .isNull(FireComment::getParentId) // 只查询一级评论
+                .orderByDesc(FireComment::getCreateTime);
+
+        IPage<FireComment> commentPage = this.page(new Page<>(current, size), wrapper);
+
+        return commentPage.convert(comment -> {
+            CommentDTO dto = convertToDTO(comment);
+            // 获取子评论
+            dto.setReplies(getReplies(comment.getId()));
+            return dto;
+        });
+    }
+
+    @Override
+    public IPage<CommentDTO> getCommentListByRoom(String roomId, int current, int size) {
+        LambdaQueryWrapper<FireComment> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(FireComment::getRoomId, roomId)
                 .isNull(FireComment::getParentId) // 只查询一级评论
                 .orderByDesc(FireComment::getCreateTime);
 

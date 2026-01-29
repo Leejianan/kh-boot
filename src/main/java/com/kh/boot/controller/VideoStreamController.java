@@ -39,7 +39,7 @@ import java.nio.file.Paths;
 public class VideoStreamController {
 
     private final FireVideoService videoService;
-    
+
     /**
      * 是否使用 Nginx X-Accel-Redirect
      * 开发环境：false (Java 直接传输)
@@ -87,13 +87,13 @@ public class VideoStreamController {
             }
 
             long fileSize = videoFile.length();
-            
+
             // 生产环境：使用 Nginx X-Accel-Redirect
             if (useNginxAccel) {
                 log.debug("Using Nginx X-Accel-Redirect for video: {}", videoPath);
                 return handleNginxAccelRedirect(videoPath, contentType, fileSize);
             }
-            
+
             // 开发环境：Java 直接流式传输
             // 开发环境：Java 直接流式传输
             log.debug("Using Java stream for video: {}", videoPath);
@@ -113,17 +113,18 @@ public class VideoStreamController {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.parseMediaType(contentType));
         headers.set(HttpHeaders.ACCEPT_RANGES, "bytes");
-        headers.setContentLength(fileSize);
-        
+        // headers.setContentLength(fileSize); // Remove this: let Nginx handle
+        // Content-Length
+
         // X-Accel-Redirect: 告诉 Nginx 从 /internal_video/ 路径读取文件
         // Nginx 配置中 alias / 会将 /internal_video/xxx 映射到 /xxx
         headers.set("X-Accel-Redirect", "/internal_video" + videoPath);
-        
+
         // X-Accel-Buffering: 关闭 Nginx 缓冲，实现真正的流式传输
         headers.set("X-Accel-Buffering", "no");
-        
+
         log.info("Nginx X-Accel-Redirect: {} -> /internal_video{}", videoPath, videoPath);
-        
+
         // 返回空 body，Nginx 会接管后续传输
         return new ResponseEntity<>(headers, HttpStatus.OK);
     }
@@ -132,14 +133,15 @@ public class VideoStreamController {
      * 开发环境：Java 直接流式传输
      * 支持 HTTP Range 请求
      */
-    private ResponseEntity<Resource> handleJavaStream(File videoFile, String contentType, long fileSize, String rangeHeader) throws IOException {
+    private ResponseEntity<Resource> handleJavaStream(File videoFile, String contentType, long fileSize,
+            String rangeHeader) throws IOException {
         // 处理 Range 请求
         if (rangeHeader != null && rangeHeader.startsWith("bytes=")) {
             String[] ranges = rangeHeader.substring(6).split("-");
             long start = Long.parseLong(ranges[0]);
-            long end = ranges.length > 1 && !ranges[1].isEmpty() 
-                ? Long.parseLong(ranges[1]) 
-                : fileSize - 1;
+            long end = ranges.length > 1 && !ranges[1].isEmpty()
+                    ? Long.parseLong(ranges[1])
+                    : fileSize - 1;
 
             if (start >= fileSize) {
                 return ResponseEntity.status(HttpStatus.REQUESTED_RANGE_NOT_SATISFIABLE)
@@ -148,16 +150,16 @@ public class VideoStreamController {
             }
 
             long contentLength = end - start + 1;
-            
+
             log.debug("Range request: bytes={}-{}/{}", start, end, fileSize);
 
             // 使用 RandomAccessFile 读取指定范围的数据
             RandomAccessFile randomAccessFile = new RandomAccessFile(videoFile, "r");
             randomAccessFile.seek(start);
-            
+
             InputStreamResource resource = new InputStreamResource(new java.io.InputStream() {
                 private long bytesRead = 0;
-                
+
                 @Override
                 public int read() throws IOException {
                     if (bytesRead >= contentLength) {
@@ -166,7 +168,7 @@ public class VideoStreamController {
                     bytesRead++;
                     return randomAccessFile.read();
                 }
-                
+
                 @Override
                 public int read(byte[] b, int off, int len) throws IOException {
                     if (bytesRead >= contentLength) {
@@ -180,7 +182,7 @@ public class VideoStreamController {
                     }
                     return actualRead;
                 }
-                
+
                 @Override
                 public void close() throws IOException {
                     randomAccessFile.close();
@@ -198,7 +200,7 @@ public class VideoStreamController {
 
         // 没有 Range 请求，返回完整文件
         InputStreamResource resource = new InputStreamResource(new java.io.FileInputStream(videoFile));
-        
+
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.parseMediaType(contentType));
         headers.set(HttpHeaders.ACCEPT_RANGES, "bytes");

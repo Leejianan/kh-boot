@@ -36,10 +36,9 @@ public class DanmakuServiceImpl extends ServiceImpl<FireDanmakuMapper, FireDanma
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public DanmakuDTO sendDanmaku(String roomId, String videoId, String content, int videoTime,
+    public DanmakuDTO sendDanmaku(String userId, String username, String roomId, String videoId, String content,
+            int videoTime,
             String color, String position) {
-        String userId = SecurityUtils.getUserId();
-        String username = SecurityUtils.getUsername();
 
         FireDanmaku danmaku = new FireDanmaku();
         danmaku.setRoomId(roomId);

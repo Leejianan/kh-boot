@@ -43,6 +43,13 @@ public interface ScreeningRoomService extends IService<FireScreeningRoom> {
     void joinRoom(String roomId, String password);
 
     /**
+     * 加入放映室（无需密码，用于 WebSocket 自动重连或已验证场景）
+     *
+     * @param roomId 放映室ID
+     */
+    void joinRoom(String roomId);
+
+    /**
      * 离开放映室
      *
      * @param roomId 放映室ID
@@ -96,5 +103,12 @@ public interface ScreeningRoomService extends IService<FireScreeningRoom> {
      *
      * @param roomId 放映室ID
      */
+    /**
+     * 处理用户离线（清理所在房间成员记录）
+     *
+     * @param userId 用户ID
+     */
+    void handleUserOffline(String userId);
+
     void closeRoom(String roomId);
 }

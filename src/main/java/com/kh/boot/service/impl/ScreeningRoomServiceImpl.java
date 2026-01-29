@@ -101,12 +101,58 @@ public class ScreeningRoomServiceImpl extends ServiceImpl<FireScreeningRoomMappe
             throw new BusinessException("放映室已关闭");
         }
 
-        // 验证密码
-        if (StringUtils.hasText(room.getPassword())) {
+        // 验证密码（房主无需验证，直接放行）
+        boolean isOwner = room.getOwnerId().equals(userId);
+        if (!isOwner && StringUtils.hasText(room.getPassword())) {
             if (!room.getPassword().equals(password)) {
                 throw new BusinessException("密码错误");
             }
         }
+
+        // 检查是否已在房间中（未被删除的记录）
+        LambdaQueryWrapper<FireRoomMember> memberWrapper = new LambdaQueryWrapper<>();
+        memberWrapper.eq(FireRoomMember::getRoomId, roomId)
+                .eq(FireRoomMember::getUserId, userId);
+        if (roomMemberMapper.selectCount(memberWrapper) > 0) {
+            return; // 已在房间中
+        }
+
+        // 尝试恢复已删除的记录（物理查询，绕过逻辑删除）
+        // 这里采用：先物理删除旧记录，再插入新记录
+        log.info("Attempting physical delete of member records for room {} and user {}", roomId, userId);
+        int deletedCount = roomMemberMapper.delete(new LambdaQueryWrapper<FireRoomMember>()
+                .eq(FireRoomMember::getRoomId, roomId)
+                .eq(FireRoomMember::getUserId, userId)
+                .apply("1=1")); // 强制物理删除，包括已逻辑删除的
+        log.info("Deleted {} existing member records", deletedCount);
+
+        try {
+            joinRoomInternal(roomId, userId);
+            log.info("Successfully joined roomInternal for user {}", userId);
+        } catch (Exception e) {
+            log.error("Failed to joinRoomInternal for user {}: {}", userId, e.getMessage(), e);
+            throw e;
+        }
+
+        // 通知房间内其他成员
+        notifyRoomMembers(roomId, "member_join", SecurityUtils.getUsername() + " 加入了放映室");
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void joinRoom(String roomId) {
+        String userId = SecurityUtils.getUserId();
+
+        FireScreeningRoom room = this.getById(roomId);
+        if (room == null) {
+            throw new BusinessException("放映室不存在");
+        }
+
+        if (room.getStatus() != 1) {
+            throw new BusinessException("放映室已关闭");
+        }
+
+        // 无需验证密码
 
         // 检查是否已在房间中（未被删除的记录）
         LambdaQueryWrapper<FireRoomMember> memberWrapper = new LambdaQueryWrapper<>();
@@ -316,6 +362,52 @@ public class ScreeningRoomServiceImpl extends ServiceImpl<FireScreeningRoomMappe
         roomMemberMapper.delete(wrapper);
 
         log.info("Room {} closed by owner", roomId);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void handleUserOffline(String userId) {
+        // 查找该用户所在的房间（理论上同时只能在一个房间）
+        LambdaQueryWrapper<FireRoomMember> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(FireRoomMember::getUserId, userId);
+        List<FireRoomMember> members = roomMemberMapper.selectList(wrapper);
+
+        for (FireRoomMember member : members) {
+            String roomId = member.getRoomId();
+
+            // 删除成员记录
+            roomMemberMapper.deleteById(member.getId());
+
+            // 获取用户信息用于通知
+            KhUser user = userService.getById(userId);
+            String username = (user != null) ? user.getUsername() : "Unknown";
+
+            // 检查是不是房主
+            FireScreeningRoom room = this.getById(roomId);
+            boolean isOwner = (room != null && room.getOwnerId().equals(userId));
+
+            // 如果是房主离线，暂停播放
+            if (isOwner && room != null && room.getIsPlaying() == 1) {
+                room.setIsPlaying(0);
+                room.setUpdateTime(new Date());
+                this.updateById(room);
+                // 通知停止播放
+                messagingTemplate.convertAndSend("/topic/room/" + roomId + "/sync",
+                        java.util.Map.of("type", "sync", "isPlaying", false, "currentTime", room.getPlayTime(),
+                                "sender", "system", "timestamp", System.currentTimeMillis()));
+            }
+
+            // 通知房间内其他成员
+            messagingTemplate.convertAndSend("/topic/room/" + roomId,
+                    java.util.Map.of(
+                            "type", "member_leave",
+                            "username", username,
+                            "isOwner", isOwner,
+                            "message", isOwner ? "房主已离线，播放已暂停" : username + " 离开了放映室",
+                            "timestamp", System.currentTimeMillis()));
+
+            log.info("User {} (offline) removed from room {}", username, roomId);
+        }
     }
 
     private ScreeningRoomDTO convertToDTO(FireScreeningRoom room) {

@@ -35,6 +35,16 @@ public interface CommentService extends IService<FireComment> {
     IPage<CommentDTO> getCommentList(String videoId, int current, int size);
 
     /**
+     * 分页获取房间评论列表
+     *
+     * @param roomId  放映室ID
+     * @param current 当前页
+     * @param size    每页大小
+     * @return 评论分页列表
+     */
+    IPage<CommentDTO> getCommentListByRoom(String roomId, int current, int size);
+
+    /**
      * 删除评论
      *
      * @param commentId 评论ID
