@@ -52,6 +52,9 @@ public class ScreeningRoomDTO {
     @Schema(description = "是否有密码")
     private Boolean hasPassword;
 
+    @Schema(description = "是否曾经加入过（历史成员）")
+    private Boolean isHistoryMember;
+
     @Schema(description = "状态")
     private Integer status;
 

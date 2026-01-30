@@ -101,20 +101,24 @@ public class ScreeningRoomServiceImpl extends ServiceImpl<FireScreeningRoomMappe
             throw new BusinessException("放映室已关闭");
         }
 
-        // 验证密码（房主无需验证，直接放行）
-        boolean isOwner = room.getOwnerId().equals(userId);
-        if (!isOwner && StringUtils.hasText(room.getPassword())) {
-            if (!room.getPassword().equals(password)) {
-                throw new BusinessException("密码错误");
-            }
-        }
-
         // 检查是否已在房间中（未被删除的记录）
+        // 如果用户已经是成员，直接通过，无需再验证密码
         LambdaQueryWrapper<FireRoomMember> memberWrapper = new LambdaQueryWrapper<>();
         memberWrapper.eq(FireRoomMember::getRoomId, roomId)
                 .eq(FireRoomMember::getUserId, userId);
         if (roomMemberMapper.selectCount(memberWrapper) > 0) {
             return; // 已在房间中
+        }
+
+        // 验证密码（房主无需验证，直接放行）
+        // 如果曾经加入过（包括异常离线导致逻辑删除的），也无需验证
+        boolean isOwner = room.getOwnerId().equals(userId);
+        boolean hasJoinedBefore = roomMemberMapper.countIncludingDeleted(roomId, userId) > 0;
+
+        if (!isOwner && !hasJoinedBefore && StringUtils.hasText(room.getPassword())) {
+            if (!room.getPassword().equals(password)) {
+                throw new BusinessException("密码错误");
+            }
         }
 
         // 尝试恢复已删除的记录（物理查询，绕过逻辑删除）
@@ -452,6 +456,21 @@ public class ScreeningRoomServiceImpl extends ServiceImpl<FireScreeningRoomMappe
         LambdaQueryWrapper<FireRoomMember> memberWrapper = new LambdaQueryWrapper<>();
         memberWrapper.eq(FireRoomMember::getRoomId, room.getId());
         dto.setMemberCount(Long.valueOf(roomMemberMapper.selectCount(memberWrapper)).intValue());
+
+        // 判断当前用户是否是历史成员（用于前端免密判断）
+        try {
+            String currentUserId = SecurityUtils.getUserId();
+            if (currentUserId != null) {
+                boolean isOwner = room.getOwnerId().equals(currentUserId);
+                boolean hasJoined = roomMemberMapper.countIncludingDeleted(room.getId(), currentUserId) > 0;
+                dto.setIsHistoryMember(isOwner || hasJoined);
+            } else {
+                dto.setIsHistoryMember(false);
+            }
+        } catch (Exception e) {
+            // 忽略未登录异常
+            dto.setIsHistoryMember(false);
+        }
 
         return dto;
     }
