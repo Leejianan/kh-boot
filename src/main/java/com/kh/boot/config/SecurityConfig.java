@@ -113,6 +113,8 @@ public class SecurityConfig {
                         .permitAll()
                         // WebSocket endpoint - needs to allow SockJS handshake
                         .requestMatchers("/ws/**").permitAll()
+                        // Static Resources (Audio)
+                        .requestMatchers("/audio/**").permitAll()
                         .anyRequest().authenticated())
 
                 .exceptionHandling(exceptions -> exceptions
