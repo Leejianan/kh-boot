@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "mysql": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@f4ww4z/mcp-mysql-server",
+        "mysql://Boom:2FbfHMKxMHrt3wYJ@localhost:3306/boom"
+      ]
+    }
+  }
+}

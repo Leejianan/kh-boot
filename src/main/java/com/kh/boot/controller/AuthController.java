@@ -173,4 +173,17 @@ public class AuthController {
         boolean isOnline = authCache.containsUser(loginUser.getUsername(), loginUser.getUserType());
         return Result.success(isOnline);
     }
+
+    @Operation(summary = "User Logout", description = "Logout and invalidate current session")
+    @PostMapping("/logout")
+    public Result<Void> logout() {
+        LoginUser loginUser = SecurityUtils.getLoginUser();
+        if (loginUser != null) {
+            System.out.println("[Logout] Admin/System User: " + loginUser.getUsername() + ", Type: " + loginUser.getUserType());
+            authCache.remove(loginUser.getUsername(), loginUser.getUserType());
+        } else {
+            System.out.println("[Logout] Request received but no login user found in context.");
+        }
+        return Result.success("Logout Success", null);
+    }
 }

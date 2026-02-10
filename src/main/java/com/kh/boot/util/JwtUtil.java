@@ -4,6 +4,7 @@ import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.security.Keys;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import javax.crypto.SecretKey;
@@ -16,7 +17,9 @@ import java.util.function.Function;
 @Component
 public class JwtUtil {
 
-    private final String SECRET_KEY = "secret_key_demo_boom_123_very_long_for_hs256"; // Must be long enough for HS256
+    @Value("${kh.security.jwt.secret:secret_key_demo_boom_123_very_long_for_hs256}")
+    private String SECRET_KEY;
+
     private final long EXPIRATION_TIME = 1000 * 60 * 60 * 2; // 2 hours
 
     private SecretKey getSigningKey() {

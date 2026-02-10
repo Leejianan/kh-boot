@@ -157,4 +157,30 @@ public class CaffeineAuthCache implements AuthCache {
     public void evictAllMenus() {
         menuCache.invalidateAll();
     }
+
+    private final java.util.concurrent.ConcurrentHashMap<String, java.util.concurrent.atomic.AtomicLong> connectionCounts = new java.util.concurrent.ConcurrentHashMap<>();
+
+    @Override
+    public void incrementConnection(String username, String userType) {
+        String key = getTypedKey(username, userType);
+        connectionCounts.computeIfAbsent(key, k -> new java.util.concurrent.atomic.AtomicLong(0)).incrementAndGet();
+    }
+
+    @Override
+    public void decrementConnection(String username, String userType) {
+        String key = getTypedKey(username, userType);
+        java.util.concurrent.atomic.AtomicLong count = connectionCounts.get(key);
+        if (count != null) {
+            if (count.decrementAndGet() <= 0) {
+                connectionCounts.remove(key);
+            }
+        }
+    }
+
+    @Override
+    public long getConnectionCount(String username, String userType) {
+        String key = getTypedKey(username, userType);
+        java.util.concurrent.atomic.AtomicLong count = connectionCounts.get(key);
+        return count != null ? count.get() : 0;
+    }
 }

@@ -74,4 +74,19 @@ public interface AuthCache {
      * Evict all users' menu cache (when permissions change)
      */
     void evictAllMenus();
+
+    /**
+     * Increment active connection count for a user
+     */
+    void incrementConnection(String username, String userType);
+
+    /**
+     * Decrement active connection count for a user
+     */
+    void decrementConnection(String username, String userType);
+
+    /**
+     * Get active connection count for a user
+     */
+    long getConnectionCount(String username, String userType);
 }

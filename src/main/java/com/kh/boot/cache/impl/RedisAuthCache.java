@@ -196,4 +196,33 @@ public class RedisAuthCache implements AuthCache {
             redisTemplate.delete(keys);
         }
     }
+
+    private static final String KEY_CONN_COUNT = "auth:conn:count:";
+
+    @Override
+    public void incrementConnection(String username, String userType) {
+        String key = getTypedKey(KEY_CONN_COUNT, username, userType);
+        redisTemplate.opsForValue().increment(key);
+        // Reset expiry to match auth timeout
+        redisTemplate.expire(key, timeout, TimeUnit.MINUTES);
+    }
+
+    @Override
+    public void decrementConnection(String username, String userType) {
+        String key = getTypedKey(KEY_CONN_COUNT, username, userType);
+        Long count = redisTemplate.opsForValue().decrement(key);
+        if (count != null && count <= 0) {
+            redisTemplate.delete(key);
+        }
+    }
+
+    @Override
+    public long getConnectionCount(String username, String userType) {
+        String key = getTypedKey(KEY_CONN_COUNT, username, userType);
+        Object value = redisTemplate.opsForValue().get(key);
+        if (value instanceof Number) {
+            return ((Number) value).longValue();
+        }
+        return 0;
+    }
 }
